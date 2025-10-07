@@ -17,7 +17,10 @@ http.createServer((req, res) => {
 
 // Initialize Gemini 2.5 Flash
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+// Store conversation history per channel
+// Format: { channelId: [{ role: 'user', parts: [{ text: '...' }] }, ...] }
+const conversationHistory = new Map();
 
 // Initialize Discord client
 const client = new Client({
@@ -49,31 +52,61 @@ client.on('interactionCreate', async interaction => {
 
     if (commandName === 'ask') {
       const question = interaction.options.getString('question');
+      const channelId = interaction.channelId;
 
       // Defer reply because AI might take time
       await interaction.deferReply();
 
+      // Get or create conversation history for this channel
+      if (!conversationHistory.has(channelId)) {
+        conversationHistory.set(channelId, []);
+      }
+      
+      const history = conversationHistory.get(channelId);
+
       // Add instruction to keep response concise
       const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
-      // Get AI response from Gemini
-      const result = await model.generateContent(prompt);
+      // Create chat session with history
+      const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
+        history: history,
+      });
+
+      // Send message and get response
+      const result = await chat.sendMessage(prompt);
       const response = result.response;
       let answer = response.text();
+
+      // Update conversation history
+      history.push(
+        { role: 'user', parts: [{ text: prompt }] },
+        { role: 'model', parts: [{ text: answer }] }
+      );
+
+      // Limit history to last 10 exchanges (20 messages) to avoid token limits
+      if (history.length > 20) {
+        history.splice(0, history.length - 20);
+      }
 
       // Safety check - if still too long, truncate
       if (answer.length > 3900) {
         answer = answer.substring(0, 3897) + '...';
       }
 
-      // Create embed without redundant title
+      // Create embed
       const embed = new EmbedBuilder()
         .setColor(0x5865F2) // Discord blurple color
         .setDescription(`**❓ ${question}**\n\n${answer}`)
-        .setFooter({ text: 'Powered by Google Gemini' })
+        .setFooter({ text: 'Powered by Google Gemini • Remembers conversation' })
         .setTimestamp();
 
       await interaction.editReply({ embeds: [embed] });
+    }
+
+    if (commandName === 'clear') {
+      const channelId = interaction.channelId;
+      conversationHistory.delete(channelId);
+      await interaction.reply('🧹 Conversation history cleared for this channel!');
     }
   } catch (error) {
     console.error('Error handling command:', error.message);

@@ -15,6 +15,9 @@ const commands = [
         .setRequired(true)
     ),
   new SlashCommandBuilder()
+    .setName('clear')
+    .setDescription('Clear conversation history for this channel'),
+  new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Check if the bot is online'),
   new SlashCommandBuilder()
