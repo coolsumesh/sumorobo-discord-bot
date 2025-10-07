@@ -1,5 +1,6 @@
 require('dotenv').config();
 const http = require('http');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 // Create HTTP server for Render
 const PORT = process.env.PORT || 3000;
@@ -10,12 +11,12 @@ http.createServer((req, res) => {
   console.log(`✅ HTTP server running on port ${PORT}`);
 });
 
+// Initialize Gemini 2.5 Flash
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
 // Discord bot imports
 const { Client, GatewayIntentBits } = require('discord.js');
-const { HfInference } = require('@huggingface/inference');
-
-// Initialize Hugging Face
-const hf = new HfInference(process.env.HUGGINGFACE_TOKEN);
 
 // Initialize Discord client
 const client = new Client({
@@ -56,24 +57,16 @@ client.on('messageCreate', async message => {
     try {
       await message.channel.sendTyping();
       
-      // Use text generation with a working model
-      const response = await hf.textGeneration({
-        model: 'mistralai/Mistral-7B-Instruct-v0.3',
-        inputs: `Question: ${question}\n\nAnswer:`,
-        parameters: {
-          max_new_tokens: 500,
-          temperature: 0.7,
-          return_full_text: false,
-        }
-      });
+      // Use Gemini 2.5 Flash
+      const result = await model.generateContent(question);
+      const response = result.response;
+      const answer = response.text();
       
-      const answer = response.generated_text.trim();
-      
-      // Split long messages (Discord has 2000 char limit)
+      // Discord has 2000 character limit
       if (answer.length > 2000) {
         message.reply(answer.substring(0, 1997) + '...');
       } else {
-        message.reply(answer || 'Sorry, I could not generate a response.');
+        message.reply(answer);
       }
       
     } catch (error) {
