@@ -15,12 +15,6 @@ http.createServer((req, res) => {
   console.log(`✅ HTTP server running on port ${PORT}`);
 });
 
-// Verify environment variables
-console.log('Environment check:');
-console.log('- DISCORD_TOKEN:', process.env.DISCORD_TOKEN ? 'Set ✅' : 'Missing ❌');
-console.log('- GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? 'Set ✅' : 'Missing ❌');
-console.log('- CLIENT_ID:', process.env.CLIENT_ID ? 'Set ✅' : 'Missing ❌');
-
 // Initialize Gemini 2.5 Flash
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -40,38 +34,29 @@ client.once('clientReady', () => {
 
 // Handle slash commands
 client.on('interactionCreate', async interaction => {
-  console.log('Interaction received:', interaction.commandName);
-  
   if (!interaction.isChatInputCommand()) return;
 
   const { commandName } = interaction;
 
   try {
     if (commandName === 'ping') {
-      console.log('Handling ping command');
       await interaction.reply('🏓 Pong!');
     }
 
     if (commandName === 'hello') {
-      console.log('Handling hello command');
       await interaction.reply('👋 Hello! I am SumoRobo!');
     }
 
     if (commandName === 'ask') {
-      console.log('Handling ask command');
       const question = interaction.options.getString('question');
-      console.log('Question:', question);
 
       // Defer reply because AI might take time
       await interaction.deferReply();
-      console.log('Reply deferred');
 
       // Get AI response from Gemini
-      console.log('Calling Gemini API...');
       const result = await model.generateContent(question);
       const response = result.response;
       const answer = response.text();
-      console.log('Got response from Gemini');
 
       // Discord has 2000 character limit
       if (answer.length > 2000) {
@@ -79,11 +64,9 @@ client.on('interactionCreate', async interaction => {
       } else {
         await interaction.editReply(answer);
       }
-      console.log('Reply sent successfully');
     }
   } catch (error) {
-    console.error('Error handling interaction:', error);
-    console.error('Error stack:', error.stack);
+    console.error('Error handling command:', error.message);
     
     try {
       if (interaction.deferred) {
@@ -92,7 +75,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply('Sorry, I encountered an error! Please try again.');
       }
     } catch (replyError) {
-      console.error('Error sending error message:', replyError);
+      console.error('Error sending error message:', replyError.message);
     }
   }
 });
