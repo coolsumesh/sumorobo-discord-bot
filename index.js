@@ -4,7 +4,7 @@ require('dotenv').config({ path: envFile });
 
 const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 // Create HTTP server for Render
 const PORT = process.env.PORT || 3000;
@@ -56,14 +56,25 @@ client.on('interactionCreate', async interaction => {
       // Get AI response from Gemini
       const result = await model.generateContent(question);
       const response = result.response;
-      const answer = response.text();
+      let answer = response.text();
 
-      // Discord has 2000 character limit
-      if (answer.length > 2000) {
-        await interaction.editReply(answer.substring(0, 1997) + '...');
-      } else {
-        await interaction.editReply(answer);
+      // Discord embed fields have 1024 char limit
+      if (answer.length > 1024) {
+        answer = answer.substring(0, 1021) + '...';
       }
+
+      // Create embed
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2) // Discord blurple color
+        .setTitle('🤖 AI Response')
+        .addFields(
+          { name: '❓ Question', value: question, inline: false },
+          { name: '💡 Answer', value: answer, inline: false }
+        )
+        .setFooter({ text: 'Powered by Google Gemini' })
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
     }
   } catch (error) {
     console.error('Error handling command:', error.message);
@@ -80,7 +91,7 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Keep text commands as backup (optional)
+// Keep text commands as backup
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
   
