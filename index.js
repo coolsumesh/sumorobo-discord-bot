@@ -56,26 +56,24 @@ client.on('messageCreate', async message => {
     try {
       await message.channel.sendTyping();
       
-      // Use Hugging Face model
-      let fullResponse = '';
-      
-      for await (const chunk of hf.chatCompletionStream({
-        model: "mistralai/Mistral-7B-Instruct-v0.2",
-        messages: [
-          { role: "user", content: question }
-        ],
-        max_tokens: 500,
-      })) {
-        if (chunk.choices && chunk.choices[0]?.delta?.content) {
-          fullResponse += chunk.choices[0].delta.content;
+      // Use text generation with a working model
+      const response = await hf.textGeneration({
+        model: 'mistralai/Mistral-7B-Instruct-v0.3',
+        inputs: `Question: ${question}\n\nAnswer:`,
+        parameters: {
+          max_new_tokens: 500,
+          temperature: 0.7,
+          return_full_text: false,
         }
-      }
+      });
+      
+      const answer = response.generated_text.trim();
       
       // Split long messages (Discord has 2000 char limit)
-      if (fullResponse.length > 2000) {
-        message.reply(fullResponse.substring(0, 1997) + '...');
+      if (answer.length > 2000) {
+        message.reply(answer.substring(0, 1997) + '...');
       } else {
-        message.reply(fullResponse || 'Sorry, I could not generate a response.');
+        message.reply(answer || 'Sorry, I could not generate a response.');
       }
       
     } catch (error) {
