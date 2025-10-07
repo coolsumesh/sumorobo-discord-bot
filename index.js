@@ -53,24 +53,23 @@ client.on('interactionCreate', async interaction => {
       // Defer reply because AI might take time
       await interaction.deferReply();
 
+      // Add instruction to keep response concise
+      const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
+
       // Get AI response from Gemini
-      const result = await model.generateContent(question);
+      const result = await model.generateContent(prompt);
       const response = result.response;
       let answer = response.text();
 
-      // Discord embed fields have 1024 char limit
-      if (answer.length > 1024) {
-        answer = answer.substring(0, 1021) + '...';
+      // Safety check - if still too long, truncate
+      if (answer.length > 3900) {
+        answer = answer.substring(0, 3897) + '...';
       }
 
-      // Create embed
+      // Create embed without redundant title
       const embed = new EmbedBuilder()
         .setColor(0x5865F2) // Discord blurple color
-        .setTitle('🤖 AI Response')
-        .addFields(
-          { name: '❓ Question', value: question, inline: false },
-          { name: '💡 Answer', value: answer, inline: false }
-        )
+        .setDescription(`**❓ ${question}**\n\n${answer}`)
         .setFooter({ text: 'Powered by Google Gemini' })
         .setTimestamp();
 
