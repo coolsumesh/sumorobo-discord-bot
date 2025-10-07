@@ -1,14 +1,21 @@
 {
   "name": "sumorobo-bot",
   "version": "1.0.0",
+  "description": "Discord bot with AI",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js .env.dev",
+    "prod": "node index.js .env.prod",
+    "register:dev": "node register-commands.js .env.dev",
+    "register:prod": "node register-commands.js .env.prod"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@huggingface/inference": "^2.6.4",
     "discord.js": "^14.14.1",
-    "dotenv": "^17.2.3"
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

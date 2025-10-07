@@ -1,4 +1,6 @@
-require('dotenv').config();
+const envFile = process.argv[2] || '.env';
+require('dotenv').config({ path: envFile });
+
 const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
