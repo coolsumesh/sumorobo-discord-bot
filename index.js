@@ -35,62 +35,125 @@ client.once('clientReady', () => {
   console.log(`✅ ${client.user.tag} is online!`);
 });
 
-// Function to extract text from PDF
-async function extractPDFText(pdfUrl) {
+// Function to get MIME type from filename
+function getMimeType(fileName) {
+  const ext = fileName.toLowerCase().split('.').pop();
+  const mimeTypes = {
+    // Documents
+    'pdf': 'application/pdf',
+    'doc': 'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'txt': 'text/plain',
+    'md': 'text/markdown',
+    'csv': 'text/csv',
+    'json': 'application/json',
+    'xml': 'application/xml',
+    'html': 'text/html',
+    // Images
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'bmp': 'image/bmp',
+    // Audio
+    'mp3': 'audio/mpeg',
+    'wav': 'audio/wav',
+    'm4a': 'audio/mp4',
+    // Video
+    'mp4': 'video/mp4',
+    'mov': 'video/quicktime',
+    'avi': 'video/x-msvideo',
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+
+// Function to handle any file type with Gemini
+async function handleFileWithGemini(fileUrl, fileName, question) {
   try {
-    console.log('Fetching PDF from:', pdfUrl);
-    const response = await fetch(pdfUrl);
+    console.log('Fetching file:', fileName);
+    const response = await fetch(fileUrl);
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`Failed to download file (HTTP ${response.status})`);
     }
     
-    console.log('PDF fetched successfully');
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    console.log('Buffer size:', buffer.length, 'bytes');
+    const fileSizeMB = (buffer.length / (1024 * 1024)).toFixed(2);
+    console.log('File size:', fileSizeMB, 'MB');
     
-    console.log('Parsing PDF...');
-    
-    // Require pdf-parse inside the function to handle module loading
-    const pdfParse = require('pdf-parse');
-    console.log('pdf-parse loaded, type:', typeof pdfParse);
-    
-    const data = await pdfParse(buffer);
-    console.log('Pages:', data.numpages);
-    console.log('Text length:', data.text.length, 'characters');
-    
-    if (!data.text || data.text.trim().length === 0) {
-      throw new Error('PDF appears to be empty or image-based (scanned). I can only read text-based PDFs.');
+    // Check file size (Gemini has limits)
+    if (buffer.length > 20 * 1024 * 1024) { // 20MB limit
+      throw new Error('File is too large (max 20MB). Please use a smaller file.');
     }
     
-    return data.text;
+    // Get MIME type
+    const mimeType = getMimeType(fileName);
+    console.log('MIME type:', mimeType);
+    
+    // Convert buffer to base64
+    const base64Data = buffer.toString('base64');
+    
+    // Send to Gemini with inline data
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    
+    const prompt = `I've attached a file (${fileName}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.`;
+    
+    console.log('Sending to Gemini...');
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Data
+        }
+      },
+      prompt
+    ]);
+    
+    const geminiResponse = result.response;
+    const answer = geminiResponse.text();
+    
+    console.log('Response received, length:', answer.length);
+    return answer;
+    
   } catch (error) {
-    console.error('Error extracting PDF:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('Error processing file:', error.message);
     throw error;
   }
 }
 
-// Function to handle AI questions (used by both slash and text commands)
-async function handleAIQuestion(question, channelId, replyFunction, pdfText = null) {
+// Function to handle AI questions (with or without files)
+async function handleAIQuestion(question, channelId, replyFunction, fileData = null) {
   try {
-    // Get or create conversation history for this channel
+    // If there's a file, use Gemini's file handling
+    if (fileData) {
+      const answer = await handleFileWithGemini(fileData.url, fileData.name, question);
+      
+      // Truncate if too long
+      let finalAnswer = answer;
+      if (finalAnswer.length > 3900) {
+        finalAnswer = finalAnswer.substring(0, 3897) + '...';
+      }
+      
+      // Create embed
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setDescription(`**❓ ${question}** 📎 \`${fileData.name}\`\n\n${finalAnswer}`)
+        .setFooter({ text: 'Powered by Google Gemini • Analyzed file' })
+        .setTimestamp();
+
+      await replyFunction({ embeds: [embed] });
+      return;
+    }
+    
+    // No file - use conversation history
     if (!conversationHistory.has(channelId)) {
       conversationHistory.set(channelId, []);
     }
     
     const history = conversationHistory.get(channelId);
-
-    // Build prompt with PDF context if available
-    let prompt;
-    if (pdfText) {
-      // Limit PDF text to avoid token limits (first 10000 characters)
-      const limitedPdfText = pdfText.substring(0, 10000);
-      prompt = `I have a PDF document with the following content:\n\n${limitedPdfText}\n\nQuestion: ${question}\n\nPlease answer based on the PDF content. Keep your response under 3500 characters while being comprehensive.`;
-    } else {
-      prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
-    }
+    const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
     // Create chat session with history
     const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
@@ -108,12 +171,12 @@ async function handleAIQuestion(question, channelId, replyFunction, pdfText = nu
       { role: 'model', parts: [{ text: answer }] }
     );
 
-    // Limit history to last 10 exchanges (20 messages)
+    // Limit history to last 10 exchanges
     if (history.length > 20) {
       history.splice(0, history.length - 20);
     }
 
-    // Safety check - if still too long, truncate
+    // Truncate if too long
     if (answer.length > 3900) {
       answer = answer.substring(0, 3897) + '...';
     }
@@ -121,15 +184,25 @@ async function handleAIQuestion(question, channelId, replyFunction, pdfText = nu
     // Create embed
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
-      .setDescription(`**❓ ${question}**${pdfText ? ' 📄' : ''}\n\n${answer}`)
-      .setFooter({ text: pdfText ? 'Powered by Google Gemini • Analyzed PDF' : 'Powered by Google Gemini • Remembers conversation' })
+      .setDescription(`**❓ ${question}**\n\n${answer}`)
+      .setFooter({ text: 'Powered by Google Gemini • Remembers conversation' })
       .setTimestamp();
 
     await replyFunction({ embeds: [embed] });
     
   } catch (error) {
     console.error('Error handling AI question:', error.message);
-    await replyFunction('Sorry, I encountered an error! Please try again.');
+    
+    let errorMsg = 'Sorry, I encountered an error! ';
+    if (error.message.includes('too large')) {
+      errorMsg += error.message;
+    } else if (error.message.includes('download')) {
+      errorMsg += 'Could not download the file.';
+    } else {
+      errorMsg += 'Please try again.';
+    }
+    
+    await replyFunction(errorMsg);
   }
 }
 
@@ -152,10 +225,8 @@ client.on('interactionCreate', async interaction => {
       const question = interaction.options.getString('question');
       const channelId = interaction.channelId;
 
-      // Defer reply because AI might take time
       await interaction.deferReply();
 
-      // Use the shared function
       await handleAIQuestion(question, channelId, async (content) => {
         await interaction.editReply(content);
       });
@@ -206,7 +277,7 @@ client.on('messageCreate', async message => {
     return;
   }
 
-  // .ask command with optional PDF
+  // .ask command with optional file attachment
   if (lowerContent.startsWith('.ask ')) {
     const question = content.slice(5).trim();
     
@@ -215,37 +286,27 @@ client.on('messageCreate', async message => {
       return;
     }
 
-    // Check for PDF attachment
-    let pdfText = null;
-    const pdfAttachment = message.attachments.find(att => att.name.toLowerCase().endsWith('.pdf'));
-    
-    if (pdfAttachment) {
-      try {
-        await message.channel.sendTyping();
-        const statusMsg = await message.reply('📄 Reading PDF... This may take a moment.');
-        pdfText = await extractPDFText(pdfAttachment.url);
-        console.log(`✅ Successfully extracted ${pdfText.length} characters from PDF`);
-        await statusMsg.delete(); // Remove the "reading" message
-      } catch (error) {
-        console.error('PDF extraction failed:', error.message);
-        
-        let errorMsg = '❌ ' + error.message;
-        if (!error.message.includes('PDF')) {
-          errorMsg = '❌ Failed to read the PDF file. ' + error.message;
-        }
-        
-        message.reply(errorMsg);
-        return;
-      }
+    // Check for any file attachment
+    let fileData = null;
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      fileData = {
+        url: attachment.url,
+        name: attachment.name
+      };
+      
+      console.log('File attached:', fileData.name);
+      await message.channel.sendTyping();
+      await message.reply(`📎 Analyzing \`${fileData.name}\`... This may take a moment.`);
     }
 
     // Show typing indicator
     await message.channel.sendTyping();
 
-    // Use the shared function
+    // Handle the question
     await handleAIQuestion(question, message.channelId, async (content) => {
       await message.reply(content);
-    }, pdfText);
+    }, fileData);
   }
 });
 
