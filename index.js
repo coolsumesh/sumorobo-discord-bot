@@ -19,7 +19,6 @@ http.createServer((req, res) => {
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Store conversation history per channel
-// Format: { channelId: [{ role: 'user', parts: [{ text: '...' }] }, ...] }
 const conversationHistory = new Map();
 
 // Initialize Discord client
@@ -34,6 +33,60 @@ const client = new Client({
 client.once('clientReady', () => {
   console.log(`✅ ${client.user.tag} is online!`);
 });
+
+// Function to handle AI questions (used by both slash and text commands)
+async function handleAIQuestion(question, channelId, replyFunction) {
+  try {
+    // Get or create conversation history for this channel
+    if (!conversationHistory.has(channelId)) {
+      conversationHistory.set(channelId, []);
+    }
+    
+    const history = conversationHistory.get(channelId);
+
+    // Add instruction to keep response concise
+    const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
+
+    // Create chat session with history
+    const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
+      history: history,
+    });
+
+    // Send message and get response
+    const result = await chat.sendMessage(prompt);
+    const response = result.response;
+    let answer = response.text();
+
+    // Update conversation history
+    history.push(
+      { role: 'user', parts: [{ text: prompt }] },
+      { role: 'model', parts: [{ text: answer }] }
+    );
+
+    // Limit history to last 10 exchanges (20 messages)
+    if (history.length > 20) {
+      history.splice(0, history.length - 20);
+    }
+
+    // Safety check - if still too long, truncate
+    if (answer.length > 3900) {
+      answer = answer.substring(0, 3897) + '...';
+    }
+
+    // Create embed
+    const embed = new EmbedBuilder()
+      .setColor(0x5865F2)
+      .setDescription(`**❓ ${question}**\n\n${answer}`)
+      .setFooter({ text: 'Powered by Google Gemini • Remembers conversation' })
+      .setTimestamp();
+
+    await replyFunction({ embeds: [embed] });
+    
+  } catch (error) {
+    console.error('Error handling AI question:', error.message);
+    await replyFunction('Sorry, I encountered an error! Please try again.');
+  }
+}
 
 // Handle slash commands
 client.on('interactionCreate', async interaction => {
@@ -57,50 +110,10 @@ client.on('interactionCreate', async interaction => {
       // Defer reply because AI might take time
       await interaction.deferReply();
 
-      // Get or create conversation history for this channel
-      if (!conversationHistory.has(channelId)) {
-        conversationHistory.set(channelId, []);
-      }
-      
-      const history = conversationHistory.get(channelId);
-
-      // Add instruction to keep response concise
-      const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
-
-      // Create chat session with history
-      const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
-        history: history,
+      // Use the shared function
+      await handleAIQuestion(question, channelId, async (content) => {
+        await interaction.editReply(content);
       });
-
-      // Send message and get response
-      const result = await chat.sendMessage(prompt);
-      const response = result.response;
-      let answer = response.text();
-
-      // Update conversation history
-      history.push(
-        { role: 'user', parts: [{ text: prompt }] },
-        { role: 'model', parts: [{ text: answer }] }
-      );
-
-      // Limit history to last 10 exchanges (20 messages) to avoid token limits
-      if (history.length > 20) {
-        history.splice(0, history.length - 20);
-      }
-
-      // Safety check - if still too long, truncate
-      if (answer.length > 3900) {
-        answer = answer.substring(0, 3897) + '...';
-      }
-
-      // Create embed
-      const embed = new EmbedBuilder()
-        .setColor(0x5865F2) // Discord blurple color
-        .setDescription(`**❓ ${question}**\n\n${answer}`)
-        .setFooter({ text: 'Powered by Google Gemini • Remembers conversation' })
-        .setTimestamp();
-
-      await interaction.editReply({ embeds: [embed] });
     }
 
     if (commandName === 'clear') {
@@ -123,20 +136,47 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Keep text commands as backup
+// Handle text commands
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
   
-  const content = message.content.toLowerCase();
+  const content = message.content;
+  const lowerContent = content.toLowerCase();
   
-  if (content === '!ping') {
+  // Basic commands
+  if (lowerContent === '!ping') {
     message.reply('🏓 Pong!');
     return;
   }
   
-  if (content === '!hello') {
+  if (lowerContent === '!hello') {
     message.reply('👋 Hello! I am SumoRobo!');
     return;
+  }
+
+  if (lowerContent === '.clear') {
+    const channelId = message.channelId;
+    conversationHistory.delete(channelId);
+    message.reply('🧹 Conversation history cleared for this channel!');
+    return;
+  }
+
+  // .ask command
+  if (lowerContent.startsWith('.ask ')) {
+    const question = content.slice(5).trim(); // Remove ".ask "
+    
+    if (!question) {
+      message.reply('Please provide a question after `.ask`');
+      return;
+    }
+
+    // Show typing indicator
+    await message.channel.sendTyping();
+
+    // Use the shared function
+    await handleAIQuestion(question, message.channelId, async (content) => {
+      await message.reply(content);
+    });
   }
 });
 
