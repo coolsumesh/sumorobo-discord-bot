@@ -4,7 +4,7 @@ require('dotenv').config({ path: envFile });
 
 const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { Client, GatewayIntentBits, EmbedBuilder, AttachmentBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const pdf = require('pdf-parse');
 const fetch = require('node-fetch');
 
@@ -39,13 +39,31 @@ client.once('clientReady', () => {
 // Function to extract text from PDF
 async function extractPDFText(pdfUrl) {
   try {
+    console.log('Fetching PDF from:', pdfUrl);
     const response = await fetch(pdfUrl);
-    const buffer = await response.arrayBuffer();
-    const data = await pdf(Buffer.from(buffer));
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    console.log('PDF fetched successfully');
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    console.log('Buffer size:', buffer.length, 'bytes');
+    
+    console.log('Parsing PDF...');
+    const data = await pdf(buffer);
+    console.log('Pages:', data.numpages);
+    console.log('Text length:', data.text.length, 'characters');
+    
+    if (!data.text || data.text.trim().length === 0) {
+      throw new Error('PDF appears to be empty or image-based (scanned). I can only read text-based PDFs.');
+    }
+    
     return data.text;
   } catch (error) {
-    console.error('Error extracting PDF:', error);
-    throw new Error('Failed to read PDF file');
+    console.error('Error extracting PDF:', error.message);
+    throw error;
   }
 }
 
@@ -199,11 +217,19 @@ client.on('messageCreate', async message => {
     if (pdfAttachment) {
       try {
         await message.channel.sendTyping();
-        message.reply('📄 Reading PDF... This may take a moment.');
+        const statusMsg = await message.reply('📄 Reading PDF... This may take a moment.');
         pdfText = await extractPDFText(pdfAttachment.url);
-        console.log(`Extracted ${pdfText.length} characters from PDF`);
+        console.log(`✅ Successfully extracted ${pdfText.length} characters from PDF`);
+        await statusMsg.delete(); // Remove the "reading" message
       } catch (error) {
-        message.reply('❌ Failed to read the PDF file. Please make sure it\'s a valid PDF.');
+        console.error('PDF extraction failed:', error.message);
+        
+        let errorMsg = '❌ ' + error.message;
+        if (!error.message.includes('PDF')) {
+          errorMsg = '❌ Failed to read the PDF file. ' + error.message;
+        }
+        
+        message.reply(errorMsg);
         return;
       }
     }
