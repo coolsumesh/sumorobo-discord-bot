@@ -5,7 +5,6 @@ require('dotenv').config({ path: envFile });
 const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
-const pdf = require('pdf-parse');
 const fetch = require('node-fetch');
 
 // Create HTTP server for Render
@@ -52,7 +51,12 @@ async function extractPDFText(pdfUrl) {
     console.log('Buffer size:', buffer.length, 'bytes');
     
     console.log('Parsing PDF...');
-    const data = await pdf(buffer);
+    
+    // Require pdf-parse inside the function to handle module loading
+    const pdfParse = require('pdf-parse');
+    console.log('pdf-parse loaded, type:', typeof pdfParse);
+    
+    const data = await pdfParse(buffer);
     console.log('Pages:', data.numpages);
     console.log('Text length:', data.text.length, 'characters');
     
@@ -63,6 +67,7 @@ async function extractPDFText(pdfUrl) {
     return data.text;
   } catch (error) {
     console.error('Error extracting PDF:', error.message);
+    console.error('Error stack:', error.stack);
     throw error;
   }
 }

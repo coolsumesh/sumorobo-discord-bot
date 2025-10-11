@@ -1,7 +1,7 @@
 {
   "name": "sumorobo-bot",
   "version": "1.0.0",
-  "description": "Discord bot with AI",
+  "description": "Discord bot with AI and PDF reading",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
