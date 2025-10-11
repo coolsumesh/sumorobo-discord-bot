@@ -11,9 +11,11 @@
     "register:prod": "node register-commands.js .env.prod"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
     "@google/generative-ai": "^0.21.0",
-    "dotenv": "^16.3.1"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.7.0",
+    "pdf-parse": "^2.2.6"
   },
   "engines": {
     "node": ">=18.0.0"
