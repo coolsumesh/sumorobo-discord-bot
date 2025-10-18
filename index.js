@@ -68,6 +68,19 @@ function getMimeType(fileName) {
   return mimeTypes[ext] || 'application/octet-stream';
 }
 
+// Function to detect if question needs real-time info
+function needsRealTimeInfo(question) {
+  const realTimeKeywords = [
+    'current', 'latest', 'recent', 'today', 'now', 'this week', 'this month', 'this year',
+    '2025', '2026', '2027', 'news', 'weather', 'stock', 'price', 'score', 'result',
+    'who won', 'who is the', 'what happened', 'breaking', 'update', 'live',
+    'right now', 'at the moment', 'as of', 'president', 'ceo', 'leader'
+  ];
+  
+  const lowerQuestion = question.toLowerCase();
+  return realTimeKeywords.some(keyword => lowerQuestion.includes(keyword));
+}
+
 // Function to handle any file type with Gemini
 async function handleFileWithGemini(fileUrl, fileName, question) {
   try {
@@ -123,20 +136,18 @@ async function handleFileWithGemini(fileUrl, fileName, question) {
   }
 }
 
-// Function to handle AI questions (with or without files)
+// Function to handle AI questions (with automatic web search detection)
 async function handleAIQuestion(question, channelId, replyFunction, fileData = null) {
   try {
     // If there's a file, use Gemini's file handling
     if (fileData) {
       const answer = await handleFileWithGemini(fileData.url, fileData.name, question);
       
-      // Truncate if too long
       let finalAnswer = answer;
       if (finalAnswer.length > 3900) {
         finalAnswer = finalAnswer.substring(0, 3897) + '...';
       }
       
-      // Create embed
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setDescription(`**❓ ${question}** 📎 \`${fileData.name}\`\n\n${finalAnswer}`)
@@ -147,7 +158,42 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
       return;
     }
     
-    // No file - use conversation history
+    // Check if question needs real-time info
+    const useWebSearch = needsRealTimeInfo(question);
+    
+    if (useWebSearch) {
+      console.log('🌐 Using web search for real-time info');
+      
+      // Use Gemini with Google Search grounding
+      const model = genAI.getGenerativeModel({ 
+        model: 'gemini-2.5-flash',
+        tools: [{
+          googleSearch: {}
+        }]
+      });
+      
+      const prompt = `${question}\n\nPlease provide a clear and concise answer with current, up-to-date information. Keep your response under 3500 characters while being comprehensive.`;
+      
+      const result = await model.generateContent(prompt);
+      const response = result.response;
+      let answer = response.text();
+      
+      if (answer.length > 3900) {
+        answer = answer.substring(0, 3897) + '...';
+      }
+      
+      // Green embed for web search
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00) // Green for web search
+        .setDescription(`**❓ ${question}** 🌐\n\n${answer}`)
+        .setFooter({ text: 'Powered by Google Gemini • Searched the web for current info' })
+        .setTimestamp();
+
+      await replyFunction({ embeds: [embed] });
+      return;
+    }
+    
+    // No web search needed - use conversation history
     if (!conversationHistory.has(channelId)) {
       conversationHistory.set(channelId, []);
     }
@@ -155,33 +201,27 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     const history = conversationHistory.get(channelId);
     const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
-    // Create chat session with history
     const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
       history: history,
     });
 
-    // Send message and get response
     const result = await chat.sendMessage(prompt);
     const response = result.response;
     let answer = response.text();
 
-    // Update conversation history
     history.push(
       { role: 'user', parts: [{ text: prompt }] },
       { role: 'model', parts: [{ text: answer }] }
     );
 
-    // Limit history to last 10 exchanges
     if (history.length > 20) {
       history.splice(0, history.length - 20);
     }
 
-    // Truncate if too long
     if (answer.length > 3900) {
       answer = answer.substring(0, 3897) + '...';
     }
 
-    // Create embed
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
       .setDescription(`**❓ ${question}**\n\n${answer}`)
