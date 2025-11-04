@@ -52,7 +52,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 1. **Clone the repository**
 ```bash
-   git clone https://github.com/YOUR_USERNAME/sumorobo-discord-bot.git
+   git clone https://github.com/coolsumesh/sumorobo-discord-bot.git
    cd sumorobo-discord-bot
 ```
 
@@ -156,7 +156,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 - **Status Page:** https://stats.uptimerobot.com/svhTjEciNu
 - **Render Dashboard:** Check logs and deployments
-- **Health Check:** `https://your-app.onrender.com/` should return "SumoRobo Bot is running!"
+- **Health Check:** `https://sumorobo-discord-bot.onrender.com/` should return "SumoRobo Bot is running!"
 
 ## 🎯 Usage Examples
 
