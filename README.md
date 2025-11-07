@@ -23,7 +23,8 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 - **Real-Time Information** - Automatically searches the web for queries containing keywords like "current", "latest", "2025", "news", "weather", "stock price", etc.
 - **Persistent Web Search Mode** - Once web search is triggered, follow-up questions automatically use web search for consistent real-time information
 - **Question Mark Auto-Invoke** - Messages ending with '?' automatically invoke the bot without needing .ask command
-- **Visual Indicators** - Color-coded embeds (🔵 Blue = knowledge base, 🟢 Green = web search used)
+- **Auto School Message Copying** - Automatically detects and copies school-related messages to a dedicated "school" channel
+- **Visual Indicators** - Color-coded embeds (🔵 Blue = knowledge base, 🟢 Green = web search used, 🟠 Orange = school-related copy)
 - **File Analysis** - Attach documents, images, or PDFs and ask questions about them
 - **Message Analysis** - Use .analyse to analyze any message (with or without attachments) and continue the conversation naturally
 - **Case-Insensitive Commands** - Commands work regardless of capitalization
@@ -219,6 +220,23 @@ User: What homework do I have for L3?
 Bot: [Understands L3 = Hindi and responds accordingly]
 ```
 
+### Auto School Message Copying
+```
+# Messages in any channel with school-related keywords are automatically copied to #school
+User (in #general): Don't forget about the L2 homework due tomorrow!
+Bot: [Silently copies message to #school channel with orange embed]
+
+User (in #random): Can someone help with the math assignment?
+Bot: [Auto-copies to #school with author info and jump link]
+
+# The copied message shows:
+- Original author and avatar
+- Full message content
+- Source channel name
+- Jump link to original
+- Any attachments (with image preview)
+```
+
 ### Conversation Follow-ups
 ```
 User: .ask What is Python?
@@ -291,6 +309,30 @@ Bot automatically searches the web when questions contain:
 Once a query triggers web search (either automatically or manually), follow-up questions in the same channel will continue using web search mode until:
 - Conversation moves to a completely different topic
 - User clears conversation history with `.clear`
+
+### Auto School Message Copying
+
+The bot automatically monitors all messages and copies school-related content to a channel named "school":
+
+**How it works:**
+- Detects messages containing school-related keywords
+- Automatically copies them to the #school channel
+- Does not copy messages already in the school channel
+- Works silently in the background
+
+**School-related keywords detected:**
+- `homework`, `assignment`, `test`, `exam`, `quiz`, `study`
+- `class`, `teacher`, `school`, `subject`
+- `l2`, `l3`, `tamil`, `hindi`, `math`, `science`, `english`
+- `chapter`, `lesson`, `textbook`, `notebook`
+- `project`, `presentation`, `worksheet`, `practice`
+- `due date`, `submit`, `submission`, `grade`, `marks`
+- And more educational terms
+
+**Setup requirements:**
+- Create a Discord channel named "school" (case-insensitive)
+- Bot will automatically find and use this channel
+- No additional configuration needed
 
 ### Rate Limits
 
