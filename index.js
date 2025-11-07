@@ -17,6 +17,7 @@ const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
+const packageJson = require('./package.json');
 
 // Create HTTP server for Render
 const PORT = process.env.PORT || 3000;
@@ -428,7 +429,18 @@ client.on('interactionCreate', async interaction => {
 
   try {
     if (commandName === 'ping') {
-      await interaction.reply('🏓 Pong!');
+      const embed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('🏓 Pong!')
+        .addFields(
+          { name: 'Bot Version', value: `v${packageJson.version}`, inline: true },
+          { name: 'Status', value: '✅ Online', inline: true },
+          { name: 'AI Model', value: 'Gemini 2.5 Flash', inline: true }
+        )
+        .setFooter({ text: 'SumoRobo Discord Bot' })
+        .setTimestamp();
+
+      await interaction.reply({ embeds: [embed] });
     }
 
     if (commandName === 'hello') {
@@ -480,7 +492,18 @@ client.on('messageCreate', async message => {
 
   // Basic commands
   if (lowerContent === '!ping') {
-    message.reply('🏓 Pong!');
+    const embed = new EmbedBuilder()
+      .setColor(0x00FF00)
+      .setTitle('🏓 Pong!')
+      .addFields(
+        { name: 'Bot Version', value: `v${packageJson.version}`, inline: true },
+        { name: 'Status', value: '✅ Online', inline: true },
+        { name: 'AI Model', value: 'Gemini 2.5 Flash', inline: true }
+      )
+      .setFooter({ text: 'SumoRobo Discord Bot' })
+      .setTimestamp();
+
+    message.reply({ embeds: [embed] });
     return;
   }
   
