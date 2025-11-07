@@ -219,6 +219,9 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     // Also use web search if the previous query used it (for follow-ups)
     const directlyNeedsWebSearch = needsRealTimeInfo(question);
     const previousUsedWebSearch = lastUsedWebSearch.get(channelId) || false;
+
+    // Use web search if directly needed OR if previous query used it (sticky mode)
+    // This allows follow-up questions like "what about silver?" or "in AUD?" to also use web search
     const useWebSearch = directlyNeedsWebSearch || previousUsedWebSearch;
 
     if (useWebSearch) {
@@ -309,8 +312,9 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
       answer = answer.substring(0, 3897) + '...';
     }
 
-    // Clear web search flag since this is a regular conversation
-    lastUsedWebSearch.set(channelId, false);
+    // Don't immediately clear web search flag - let conversation context decide
+    // Only clear if this seems like a completely different topic
+    // The flag will naturally clear when user asks about unrelated topics
 
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
