@@ -7,19 +7,25 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 ### AI Capabilities
 - **Intelligent Conversations** - Powered by Google Gemini 2.5 Flash AI model
 - **Automatic Web Search** - Detects when questions need current information and searches the web automatically
+- **Persistent Web Search** - Follow-up questions maintain web search mode for continuous real-time information
 - **Conversation Memory** - Remembers context within each Discord channel for natural follow-up questions
 - **Multi-Format File Support** - Analyze PDFs, Word documents, images, text files, and more
+- **Language Learning Context** - Built-in understanding of L2 (Tamil) and L3 (Hindi) language subjects for educational assistance
 
 ### Commands
 - `/ask [question]` or `.ask [question]` - Ask the AI a question
-- `/clear` or `.clear` - Clear conversation history for the current channel
+- `.analyse` or `.analyze` - Analyze a message (reply to a message or automatically analyzes the previous message)
+- `.clear` - Clear conversation history and web search mode for the current channel
 - `/ping` or `!ping` - Check bot status
 - `/hello` or `!hello` - Greet the bot
 
 ### Smart Features
 - **Real-Time Information** - Automatically searches the web for queries containing keywords like "current", "latest", "2025", "news", "weather", "stock price", etc.
+- **Persistent Web Search Mode** - Once web search is triggered, follow-up questions automatically use web search for consistent real-time information
+- **Question Mark Auto-Invoke** - Messages ending with '?' automatically invoke the bot without needing .ask command
 - **Visual Indicators** - Color-coded embeds (🔵 Blue = knowledge base, 🟢 Green = web search used)
 - **File Analysis** - Attach documents, images, or PDFs and ask questions about them
+- **Message Analysis** - Use .analyse to analyze any message (with or without attachments) and continue the conversation naturally
 - **Case-Insensitive Commands** - Commands work regardless of capitalization
 
 ## 🛠️ Tech Stack
@@ -164,13 +170,22 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 ```
 /ask What is Python?
 .ask Explain quantum physics
+What is JavaScript? (question mark auto-invokes the bot)
 ```
 
 ### Real-Time Information (Auto Web Search)
 ```
 /ask Who is the current president of US?
 .ask Latest news about SpaceX
-.ask Weather in New York today
+What's the weather in New York today? (green embed indicates web search)
+```
+
+### Persistent Web Search
+```
+User: .ask What is the price of gold today?
+Bot: [Green embed with web search results]
+User: What about in AUD? (automatically continues with web search)
+Bot: [Green embed with AUD price]
 ```
 
 ### File Analysis
@@ -178,14 +193,37 @@ Upload a PDF/Word/Image and type:
 ```
 .ask What is this document about?
 .ask Summarize this PDF
-.ask What's in this image?
+What's in this image?
+```
+
+### Message Analysis
+```
+# Reply to a message with .analyse
+User A: [Shares a complex message or document]
+User B: .analyse (replies to User A's message)
+Bot: [Analyzes the message/document]
+
+# Or let it auto-analyze the previous message
+User: [Sends a message]
+User: .analyse (bot analyzes the previous message automatically)
+Bot: [Provides analysis]
+User: Can you elaborate? (continues the conversation with context)
+```
+
+### Language Learning (L2/L3 Context)
+```
+User: .ask Help me with my L2 Pick the Words activity
+Bot: [Provides help with Tamil language activity]
+
+User: What homework do I have for L3?
+Bot: [Understands L3 = Hindi and responds accordingly]
 ```
 
 ### Conversation Follow-ups
 ```
 User: .ask What is Python?
 Bot: [Explains Python]
-User: .ask What are its main uses?
+User: What are its main uses?
 Bot: [Remembers context and answers about Python's uses]
 ```
 
@@ -233,12 +271,26 @@ The project supports separate development and production bots:
 - **Audio:** MP3, WAV, M4A
 - **Video:** MP4, MOV, AVI
 
+### Language Learning Context
+
+The bot has built-in understanding of educational language subject designations:
+- **L2** = Tamil (Tamil language subject)
+- **L3** = Hindi (Hindi language subject)
+
+This context is automatically applied to all conversations, so when teachers or students mention "L2 assignment" or "L3 homework", the bot understands which language subject is being referenced.
+
 ### Auto Web Search Keywords
 
 Bot automatically searches the web when questions contain:
 - `current`, `latest`, `recent`, `today`, `now`
 - `2025`, `2026`, `2027`, `news`, `weather`
 - `stock`, `price`, `who won`, `what happened`
+
+### Web Search Persistence
+
+Once a query triggers web search (either automatically or manually), follow-up questions in the same channel will continue using web search mode until:
+- Conversation moves to a completely different topic
+- User clears conversation history with `.clear`
 
 ### Rate Limits
 
