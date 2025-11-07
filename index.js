@@ -141,8 +141,8 @@ async function handleFileWithGemini(fileUrl, fileName, question) {
     
     // Send to Gemini with inline data
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    
-    const prompt = `I've attached a file (${fileName}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.`;
+
+    const prompt = `${SYSTEM_CONTEXT}\n\nI've attached a file (${fileName}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.`;
     
     console.log('Sending to Gemini...');
     const result = await model.generateContent([
@@ -194,17 +194,17 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     
     if (useWebSearch) {
       console.log('🌐 Using web search for real-time info');
-      
+
       // Use Gemini with Google Search grounding
-      const model = genAI.getGenerativeModel({ 
+      const model = genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
         tools: [{
           googleSearch: {}
         }]
       });
-      
-      const prompt = `${question}\n\nPlease provide a clear and concise answer with current, up-to-date information. Keep your response under 3500 characters while being comprehensive.`;
-      
+
+      const prompt = `${SYSTEM_CONTEXT}\n\n${question}\n\nPlease provide a clear and concise answer with current, up-to-date information. Keep your response under 3500 characters while being comprehensive.`;
+
       const result = await model.generateContent(prompt);
       const response = result.response;
       let answer = response.text();
