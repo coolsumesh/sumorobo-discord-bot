@@ -33,6 +33,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Store conversation history per channel
 const conversationHistory = new Map();
 
+// Track if last query used web search (per channel)
+const lastUsedWebSearch = new Map();
+
 // System context for language learning
 const SYSTEM_CONTEXT = `You are an educational assistant helping with language learning and school assignments. Important context:
 - L2 = Tamil (Tamil language subject in school)
@@ -199,6 +202,9 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
         history.splice(0, history.length - 20);
       }
 
+      // Clear web search flag since this is a file analysis
+      lastUsedWebSearch.set(channelId, false);
+
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setDescription(`**❓ ${question}** 📎 \`${fileData.name}\`\n\n${finalAnswer}`)
@@ -210,8 +216,11 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     }
     
     // Check if question needs real-time info
-    const useWebSearch = needsRealTimeInfo(question);
-    
+    // Also use web search if the previous query used it (for follow-ups)
+    const directlyNeedsWebSearch = needsRealTimeInfo(question);
+    const previousUsedWebSearch = lastUsedWebSearch.get(channelId) || false;
+    const useWebSearch = directlyNeedsWebSearch || previousUsedWebSearch;
+
     if (useWebSearch) {
       console.log('🌐 Using web search for real-time info');
 
@@ -252,6 +261,9 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
       if (history.length > 20) {
         history.splice(0, history.length - 20);
       }
+
+      // Mark that this channel used web search for follow-up detection
+      lastUsedWebSearch.set(channelId, true);
 
       // Green embed for web search
       const embed = new EmbedBuilder()
@@ -296,6 +308,9 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     if (answer.length > 3900) {
       answer = answer.substring(0, 3897) + '...';
     }
+
+    // Clear web search flag since this is a regular conversation
+    lastUsedWebSearch.set(channelId, false);
 
     const embed = new EmbedBuilder()
       .setColor(0x5865F2)
@@ -388,6 +403,7 @@ client.on('messageCreate', async message => {
   if (lowerContent === '.clear') {
     const channelId = message.channelId;
     conversationHistory.delete(channelId);
+    lastUsedWebSearch.delete(channelId);
     message.reply('🧹 Conversation history cleared for this channel!');
     return;
   }
