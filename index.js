@@ -36,6 +36,9 @@ const conversationHistory = new Map();
 // Track if last query used web search (per channel)
 const lastUsedWebSearch = new Map();
 
+// Store the school channel ID (will be set when bot finds a channel named "school")
+let schoolChannelId = null;
+
 // System context for language learning
 const SYSTEM_CONTEXT = `You are an educational assistant helping with language learning and school assignments. Important context:
 - L2 = Tamil (Tamil language subject in school)
@@ -104,9 +107,86 @@ function needsRealTimeInfo(question) {
     'who won', 'who is the', 'what happened', 'breaking', 'update', 'live',
     'right now', 'at the moment', 'as of', 'president', 'ceo', 'leader'
   ];
-  
+
   const lowerQuestion = question.toLowerCase();
   return realTimeKeywords.some(keyword => lowerQuestion.includes(keyword));
+}
+
+// Function to detect if message is school-related
+function isSchoolRelated(message) {
+  const schoolKeywords = [
+    'homework', 'assignment', 'test', 'exam', 'quiz', 'study', 'class', 'teacher',
+    'school', 'subject', 'l2', 'l3', 'tamil', 'hindi', 'math', 'science', 'english',
+    'chapter', 'lesson', 'textbook', 'notebook', 'project', 'presentation',
+    'due date', 'submit', 'submission', 'grade', 'marks', 'score',
+    'syllabus', 'curriculum', 'activity', 'worksheet', 'practice'
+  ];
+
+  const lowerContent = message.toLowerCase();
+  return schoolKeywords.some(keyword => lowerContent.includes(keyword));
+}
+
+// Function to copy message to school channel
+async function copyToSchoolChannel(message, client) {
+  try {
+    // Don't copy messages that are already in the school channel
+    if (message.channel.name && message.channel.name.toLowerCase() === 'school') {
+      return;
+    }
+
+    // Find the school channel if not already found
+    if (!schoolChannelId) {
+      const channels = await message.guild.channels.fetch();
+      const schoolChannel = channels.find(ch => ch.name && ch.name.toLowerCase() === 'school');
+
+      if (schoolChannel) {
+        schoolChannelId = schoolChannel.id;
+      } else {
+        console.log('School channel not found');
+        return;
+      }
+    }
+
+    const schoolChannel = await client.channels.fetch(schoolChannelId);
+
+    if (!schoolChannel) {
+      console.log('Could not fetch school channel');
+      return;
+    }
+
+    // Create an embed with the original message info
+    const embed = new EmbedBuilder()
+      .setColor(0xFFA500) // Orange for school-related
+      .setAuthor({
+        name: message.author.username,
+        iconURL: message.author.displayAvatarURL()
+      })
+      .setDescription(message.content)
+      .addFields(
+        { name: 'From Channel', value: `#${message.channel.name}`, inline: true },
+        { name: 'Jump to Message', value: `[Click here](${message.url})`, inline: true }
+      )
+      .setFooter({ text: '📚 Auto-copied school-related message' })
+      .setTimestamp(message.createdAt);
+
+    // If message has attachments, add them
+    if (message.attachments.size > 0) {
+      const attachmentList = message.attachments.map(att => `[${att.name}](${att.url})`).join('\n');
+      embed.addFields({ name: 'Attachments', value: attachmentList });
+
+      // Set image if it's an image attachment
+      const firstAttachment = message.attachments.first();
+      if (firstAttachment.contentType && firstAttachment.contentType.startsWith('image/')) {
+        embed.setImage(firstAttachment.url);
+      }
+    }
+
+    await schoolChannel.send({ embeds: [embed] });
+    console.log(`📚 Copied school-related message from #${message.channel.name} to #school`);
+
+  } catch (error) {
+    console.error('Error copying to school channel:', error);
+  }
 }
 
 // Function to handle any file type with Gemini
@@ -389,10 +469,15 @@ client.on('interactionCreate', async interaction => {
 // Handle text commands
 client.on('messageCreate', async message => {
   if (message.author.bot) return;
-  
+
   const content = message.content;
   const lowerContent = content.toLowerCase();
-  
+
+  // Check if message is school-related and copy to school channel
+  if (content.trim() && isSchoolRelated(content)) {
+    await copyToSchoolChannel(message, client);
+  }
+
   // Basic commands
   if (lowerContent === '!ping') {
     message.reply('🏓 Pong!');
