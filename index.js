@@ -352,17 +352,34 @@ client.on('messageCreate', async message => {
     return;
   }
 
-  // .analyse command - analyze a replied-to message
+  // .analyse command - analyze a replied-to message or previous message
   if (lowerContent === '.analyse' || lowerContent === '.analyze') {
-    // Check if this is a reply to another message
-    if (!message.reference) {
-      message.reply('Please reply to a message with `.analyse` to analyze it.');
-      return;
-    }
-
     try {
-      // Fetch the replied-to message
-      const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+      let repliedMessage;
+
+      // Check if this is a reply to another message
+      if (message.reference) {
+        // Fetch the replied-to message
+        repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+      } else {
+        // No reply - fetch the previous message before this one
+        const messages = await message.channel.messages.fetch({ limit: 2, before: message.id });
+        const previousMessage = messages.first();
+
+        if (!previousMessage) {
+          message.reply('No previous message found to analyze.');
+          return;
+        }
+
+        // Don't analyze bot's own messages
+        if (previousMessage.author.bot) {
+          message.reply('Cannot analyze bot messages. Please reply to a specific user message to analyze it.');
+          return;
+        }
+
+        repliedMessage = previousMessage;
+      }
+
       const messageToAnalyze = repliedMessage.content;
 
       if (!messageToAnalyze || messageToAnalyze.trim() === '') {
