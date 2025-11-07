@@ -16,7 +16,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 - `/ask [question]` or `.ask [question]` - Ask the AI a question
 - `.analyse` or `.analyze` - Analyze a message (reply to a message or automatically analyzes the previous message)
 - `.clear` - Clear conversation history and web search mode for the current channel
-- `/ping` or `!ping` - Check bot status
+- `/ping` or `!ping` - Check bot status and version information
 - `/hello` or `!hello` - Greet the bot
 
 ### Smart Features
@@ -392,4 +392,4 @@ For issues or questions, please open an issue on GitHub.
 
 ---
 
-**Status:** ✅ Production Ready | **Version:** 1.0.0 | **Uptime:** ~99.5%
+**Status:** ✅ Production Ready | **Version:** 2.0.0 | **Uptime:** ~99.5%
