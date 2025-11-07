@@ -173,12 +173,32 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     // If there's a file, use Gemini's file handling
     if (fileData) {
       const answer = await handleFileWithGemini(fileData.url, fileData.name, question);
-      
+
       let finalAnswer = answer;
       if (finalAnswer.length > 3900) {
         finalAnswer = finalAnswer.substring(0, 3897) + '...';
       }
-      
+
+      // Initialize conversation history if needed
+      if (!conversationHistory.has(channelId)) {
+        conversationHistory.set(channelId, [
+          { role: 'user', parts: [{ text: SYSTEM_CONTEXT }] },
+          { role: 'model', parts: [{ text: 'Understood! I will remember that L2 refers to Tamil subject and L3 refers to Hindi subject throughout our conversation. When you mention assignments or activities for L2 or L3, I\'ll know you mean Tamil or Hindi respectively. I\'m ready to assist with your language learning assignments!' }] }
+        ]);
+      }
+
+      // Add to conversation history for follow-up questions
+      const history = conversationHistory.get(channelId);
+      history.push(
+        { role: 'user', parts: [{ text: `I've attached a file (${fileData.name}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.` }] },
+        { role: 'model', parts: [{ text: answer }] }
+      );
+
+      // Limit history to last 10 exchanges
+      if (history.length > 20) {
+        history.splice(0, history.length - 20);
+      }
+
       const embed = new EmbedBuilder()
         .setColor(0x5865F2)
         .setDescription(`**❓ ${question}** 📎 \`${fileData.name}\`\n\n${finalAnswer}`)
@@ -195,6 +215,14 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     if (useWebSearch) {
       console.log('🌐 Using web search for real-time info');
 
+      // Initialize conversation history if needed
+      if (!conversationHistory.has(channelId)) {
+        conversationHistory.set(channelId, [
+          { role: 'user', parts: [{ text: SYSTEM_CONTEXT }] },
+          { role: 'model', parts: [{ text: 'Understood! I will remember that L2 refers to Tamil subject and L3 refers to Hindi subject throughout our conversation. When you mention assignments or activities for L2 or L3, I\'ll know you mean Tamil or Hindi respectively. I\'m ready to assist with your language learning assignments!' }] }
+        ]);
+      }
+
       // Use Gemini with Google Search grounding
       const model = genAI.getGenerativeModel({
         model: 'gemini-2.5-flash',
@@ -208,11 +236,23 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
       const result = await model.generateContent(prompt);
       const response = result.response;
       let answer = response.text();
-      
+
       if (answer.length > 3900) {
         answer = answer.substring(0, 3897) + '...';
       }
-      
+
+      // Add to conversation history for follow-up questions
+      const history = conversationHistory.get(channelId);
+      history.push(
+        { role: 'user', parts: [{ text: `${question}\n\nPlease provide a clear and concise answer with current, up-to-date information. Keep your response under 3500 characters while being comprehensive.` }] },
+        { role: 'model', parts: [{ text: answer }] }
+      );
+
+      // Limit history to last 10 exchanges
+      if (history.length > 20) {
+        history.splice(0, history.length - 20);
+      }
+
       // Green embed for web search
       const embed = new EmbedBuilder()
         .setColor(0x00FF00) // Green for web search
