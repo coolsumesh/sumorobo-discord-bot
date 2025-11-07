@@ -409,6 +409,14 @@ client.on('messageCreate', async message => {
         ? `Analyze this message and its attachment: "${messageToAnalyze}"`
         : `Analyze this message: "${messageToAnalyze}"`;
 
+      // Initialize conversation history if needed (so follow-up questions work)
+      if (!conversationHistory.has(message.channelId)) {
+        conversationHistory.set(message.channelId, [
+          { role: 'user', parts: [{ text: SYSTEM_CONTEXT }] },
+          { role: 'model', parts: [{ text: 'Understood! I will remember that L2 refers to Tamil subject and L3 refers to Hindi subject throughout our conversation. When you mention assignments or activities for L2 or L3, I\'ll know you mean Tamil or Hindi respectively. I\'m ready to assist with your language learning assignments!' }] }
+        ]);
+      }
+
       await handleAIQuestion(analysisPrompt, message.channelId, async (content) => {
         await message.reply(content);
       }, fileData);
