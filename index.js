@@ -352,6 +352,57 @@ client.on('messageCreate', async message => {
     return;
   }
 
+  // .analyse command - analyze a replied-to message
+  if (lowerContent === '.analyse' || lowerContent === '.analyze') {
+    // Check if this is a reply to another message
+    if (!message.reference) {
+      message.reply('Please reply to a message with `.analyse` to analyze it.');
+      return;
+    }
+
+    try {
+      // Fetch the replied-to message
+      const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+      const messageToAnalyze = repliedMessage.content;
+
+      if (!messageToAnalyze || messageToAnalyze.trim() === '') {
+        message.reply('The message you replied to has no text content to analyze.');
+        return;
+      }
+
+      // Check if the replied message has attachments
+      let fileData = null;
+      if (repliedMessage.attachments.size > 0) {
+        const attachment = repliedMessage.attachments.first();
+        fileData = {
+          url: attachment.url,
+          name: attachment.name
+        };
+
+        console.log('Analyzing message with file:', fileData.name);
+        await message.channel.sendTyping();
+        await message.reply(`🔍 Analyzing message with attachment \`${fileData.name}\`... This may take a moment.`);
+      } else {
+        await message.channel.sendTyping();
+        await message.reply(`🔍 Analyzing message...`);
+      }
+
+      // Analyze the message content
+      const analysisPrompt = fileData
+        ? `Analyze this message and its attachment: "${messageToAnalyze}"`
+        : `Analyze this message: "${messageToAnalyze}"`;
+
+      await handleAIQuestion(analysisPrompt, message.channelId, async (content) => {
+        await message.reply(content);
+      }, fileData);
+
+    } catch (error) {
+      console.error('Error fetching replied message:', error);
+      message.reply('Sorry, I couldn\'t fetch the message you replied to. Please try again.');
+    }
+    return;
+  }
+
   // .ask command with optional file attachment
   if (lowerContent.startsWith('.ask ')) {
     const question = content.slice(5).trim();
