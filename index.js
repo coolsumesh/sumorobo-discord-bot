@@ -491,7 +491,7 @@ client.on('messageCreate', async message => {
   // .ask command with optional file attachment
   if (lowerContent.startsWith('.ask ')) {
     const question = content.slice(5).trim();
-    
+
     if (!question) {
       message.reply('Please provide a question after `.ask`');
       return;
@@ -505,7 +505,35 @@ client.on('messageCreate', async message => {
         url: attachment.url,
         name: attachment.name
       };
-      
+
+      console.log('File attached:', fileData.name);
+      await message.channel.sendTyping();
+      await message.reply(`📎 Analyzing \`${fileData.name}\`... This may take a moment.`);
+    }
+
+    // Show typing indicator
+    await message.channel.sendTyping();
+
+    // Handle the question
+    await handleAIQuestion(question, message.channelId, async (content) => {
+      await message.reply(content);
+    }, fileData);
+    return;
+  }
+
+  // Auto-invoke bot for messages ending with '?'
+  if (content.trim().endsWith('?')) {
+    const question = content.trim();
+
+    // Check for any file attachment
+    let fileData = null;
+    if (message.attachments.size > 0) {
+      const attachment = message.attachments.first();
+      fileData = {
+        url: attachment.url,
+        name: attachment.name
+      };
+
       console.log('File attached:', fileData.name);
       await message.channel.sendTyping();
       await message.reply(`📎 Analyzing \`${fileData.name}\`... This may take a moment.`);
