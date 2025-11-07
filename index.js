@@ -2,6 +2,17 @@
 const envFile = process.argv[2] || '.env';
 require('dotenv').config({ path: envFile });
 
+// Validate required environment variables
+if (!process.env.DISCORD_TOKEN) {
+  console.error('❌ DISCORD_TOKEN is required in environment file');
+  process.exit(1);
+}
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('❌ GEMINI_API_KEY is required in environment file');
+  process.exit(1);
+}
+
 const http = require('http');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
@@ -21,6 +32,20 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Store conversation history per channel
 const conversationHistory = new Map();
+
+// System context for language learning
+const SYSTEM_CONTEXT = `You are an educational assistant helping with language learning and school assignments. Important context:
+- L2 = Tamil (Tamil language subject in school)
+- L3 = Hindi (Hindi language subject in school)
+
+When the user mentions "L2", they are referring to their Tamil subject/class. When they mention "L3", they are referring to their Hindi subject/class. This is how teachers designate language subjects in assignments and activities.
+
+For example:
+- "L2 Pick the Words activity" means a Pick the Words activity for Tamil
+- "L3 homework" means Hindi homework
+- "L2 assignment" means Tamil assignment
+
+Always interpret L2 as Tamil and L3 as Hindi throughout the conversation, and provide relevant help for these language subjects.`;
 
 // Initialize Discord client
 const client = new Client({
@@ -91,12 +116,18 @@ async function handleFileWithGemini(fileUrl, fileName, question) {
       throw new Error(`Failed to download file (HTTP ${response.status})`);
     }
     
+    // Check file size before downloading
+    const contentLength = response.headers.get('content-length');
+    if (contentLength && parseInt(contentLength) > 20 * 1024 * 1024) {
+      throw new Error('File is too large (max 20MB). Please use a smaller file.');
+    }
+    
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const fileSizeMB = (buffer.length / (1024 * 1024)).toFixed(2);
     console.log('File size:', fileSizeMB, 'MB');
     
-    // Check file size (Gemini has limits)
+    // Double-check file size after download (in case content-length was missing)
     if (buffer.length > 20 * 1024 * 1024) { // 20MB limit
       throw new Error('File is too large (max 20MB). Please use a smaller file.');
     }
@@ -195,9 +226,13 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     
     // No web search needed - use conversation history
     if (!conversationHistory.has(channelId)) {
-      conversationHistory.set(channelId, []);
+      // Initialize with system context
+      conversationHistory.set(channelId, [
+        { role: 'user', parts: [{ text: SYSTEM_CONTEXT }] },
+        { role: 'model', parts: [{ text: 'Understood! I will remember that L2 refers to Tamil subject and L3 refers to Hindi subject throughout our conversation. When you mention assignments or activities for L2 or L3, I\'ll know you mean Tamil or Hindi respectively. I\'m ready to assist with your language learning assignments!' }] }
+      ]);
     }
-    
+
     const history = conversationHistory.get(channelId);
     const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
