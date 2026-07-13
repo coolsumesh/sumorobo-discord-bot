@@ -28,7 +28,7 @@ http.createServer((req, res) => {
   console.log(`✅ HTTP server running on port ${PORT}`);
 });
 
-// Initialize Gemini 2.5 Flash
+// Initialize Gemini (uses gemini-flash-latest alias so it doesn't break when versions retire)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Store conversation history per channel
@@ -224,7 +224,7 @@ async function handleFileWithGemini(fileUrl, fileName, question) {
     const base64Data = buffer.toString('base64');
     
     // Send to Gemini with inline data
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
     const prompt = `${SYSTEM_CONTEXT}\n\nI've attached a file (${fileName}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.`;
     
@@ -318,7 +318,7 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
 
       // Use Gemini with Google Search grounding
       const model = genAI.getGenerativeModel({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-latest',
         tools: [{
           googleSearch: {}
         }]
@@ -372,7 +372,7 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     const history = conversationHistory.get(channelId);
     const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
-    const chat = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }).startChat({
+    const chat = genAI.getGenerativeModel({ model: 'gemini-flash-latest' }).startChat({
       history: history,
     });
 
@@ -435,7 +435,7 @@ client.on('interactionCreate', async interaction => {
         .addFields(
           { name: 'Bot Version', value: `v${packageJson.version}`, inline: true },
           { name: 'Status', value: '✅ Online', inline: true },
-          { name: 'AI Model', value: 'Gemini 2.5 Flash', inline: true }
+          { name: 'AI Model', value: 'Gemini (flash-latest)', inline: true }
         )
         .setFooter({ text: 'SumoRobo Discord Bot' })
         .setTimestamp();
@@ -498,7 +498,7 @@ client.on('messageCreate', async message => {
       .addFields(
         { name: 'Bot Version', value: `v${packageJson.version}`, inline: true },
         { name: 'Status', value: '✅ Online', inline: true },
-        { name: 'AI Model', value: 'Gemini 2.5 Flash', inline: true }
+        { name: 'AI Model', value: 'Gemini (flash-latest)', inline: true }
       )
       .setFooter({ text: 'SumoRobo Discord Bot' })
       .setTimestamp();
