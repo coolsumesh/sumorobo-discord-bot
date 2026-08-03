@@ -52,7 +52,13 @@ For example:
 - "L3 homework" means Hindi homework
 - "L2 assignment" means Tamil assignment
 
-Always interpret L2 as Tamil and L3 as Hindi throughout the conversation, and provide relevant help for these language subjects.`;
+Always interpret L2 as Tamil and L3 as Hindi throughout the conversation, and provide relevant help for these language subjects.
+
+Formatting rules for Discord (Discord does NOT render LaTeX):
+- Never use LaTeX syntax like $$, \\(, \\[, \\times, \\mathbf, \\frac, \\rightarrow, etc.
+- For exponents/powers, write them as plain text using ^ (e.g., 5.8974 x 10^10), not as LaTeX superscripts.
+- For emphasis, use Discord markdown only: **bold**, *italic*, \`inline code\`, and \`\`\` code blocks \`\`\`.
+- For math expressions, write them in plain readable text (e.g., "5.8974 x 10^10" or "a^2 + b^2 = c^2"), not LaTeX.`;
 
 // Initialize Discord client
 const client = new Client({
