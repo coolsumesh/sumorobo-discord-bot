@@ -56,7 +56,7 @@ Always interpret L2 as Tamil and L3 as Hindi throughout the conversation, and pr
 
 Formatting rules for Discord (Discord does NOT render LaTeX):
 - Never use LaTeX syntax like $$, \\(, \\[, \\times, \\mathbf, \\frac, \\rightarrow, etc.
-- For exponents/powers, write them as plain text using ^ (e.g., 5.8974 x 10^10), not as LaTeX superscripts.
+- For exponents/powers, use actual Unicode superscript characters (e.g., 5.8974 × 10¹⁰, x², a³, e⁻¹), not LaTeX superscripts and not ^ notation. Use Unicode superscript digits (⁰¹²³⁴⁵⁶⁷⁸⁹) and superscript minus (⁻) as needed.
 - For emphasis, use Discord markdown only: **bold**, *italic*, \`inline code\`, and \`\`\` code blocks \`\`\`.
 - For math expressions, write them in plain readable text (e.g., "5.8974 x 10^10" or "a^2 + b^2 = c^2"), not LaTeX.`;
 
