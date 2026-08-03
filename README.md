@@ -10,7 +10,8 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 - **Persistent Web Search** - Follow-up questions maintain web search mode for continuous real-time information
 - **Conversation Memory** - Remembers context within each Discord channel for natural follow-up questions
 - **Multi-Format File Support** - Analyze PDFs, Word documents, images, text files, and more
-- **Language Learning Context** - Built-in understanding of L2 (Tamil) and L3 (Hindi) language subjects for educational assistance
+- **Language Learning Context** - Built-in understanding of L2/L3 language subjects for educational assistance, configurable per family (defaults: L2=Tamil, L3=Hindi)
+- **Discord-Friendly Formatting** - Math and exponents (e.g. 10¹⁰) render as clean text/Unicode instead of raw LaTeX, since Discord doesn't support LaTeX rendering
 
 ### Commands
 - `/ask [question]` or `.ask [question]` - Ask the AI a question
@@ -75,6 +76,11 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    DISCORD_TOKEN=your_discord_bot_token
    GEMINI_API_KEY=your_gemini_api_key
    CLIENT_ID=your_bot_application_id
+   GEMINI_API_KEY_FREE=your_free_tier_gemini_api_key   # optional, see Cost section
+   SCHOOL_CHANNEL_NAME=school     # optional, defaults to "school"
+   BOT_TEST_CHANNEL_NAME=bot_test # optional, defaults to "bot_test"
+   L2_SUBJECT=Tamil                # optional, defaults to "Tamil"
+   L3_SUBJECT=Hindi                # optional, defaults to "Hindi"
 ```
 
    Create `.env.dev` file for development:
@@ -291,11 +297,11 @@ The project supports separate development and production bots:
 
 ### Language Learning Context
 
-The bot has built-in understanding of educational language subject designations:
-- **L2** = Tamil (Tamil language subject)
-- **L3** = Hindi (Hindi language subject)
+The bot understands educational language subject designations, configurable via `L2_SUBJECT`/`L3_SUBJECT` (defaults: Tamil/Hindi):
+- **L2** = your configured L2 subject (e.g. Tamil)
+- **L3** = your configured L3 subject (e.g. Hindi)
 
-This context is automatically applied to all conversations, so when teachers or students mention "L2 assignment" or "L3 homework", the bot understands which language subject is being referenced.
+This context is automatically applied to all conversations, so when teachers or students mention "L2 assignment" or "L3 homework", the bot understands which language subject is being referenced. Set `L2_SUBJECT`/`L3_SUBJECT` to whatever second/third language subjects your child's school uses.
 
 ### Auto Web Search Keywords
 
@@ -330,9 +336,10 @@ The bot automatically monitors all messages and copies school-related content to
 - And more educational terms
 
 **Setup requirements:**
-- Create a Discord channel named "school" (case-insensitive)
+- Create a Discord channel named "school" (case-insensitive), or set `SCHOOL_CHANNEL_NAME` to whatever you named it
 - Bot will automatically find and use this channel
 - No additional configuration needed
+- Optional: create a channel named "bot_test" (or set `BOT_TEST_CHANNEL_NAME`) for testing the bot without triggering auto-copies to your school channel
 
 ### Rate Limits
 
@@ -372,6 +379,9 @@ The bot automatically monitors all messages and copies school-related content to
 - Render Starter: $7/month (no spin-down, better resources)
 - UptimeRobot Pro: $7/month (webhooks, 1-min checks)
 
+**Free + paid Gemini key fallback:**
+Set `GEMINI_API_KEY_FREE` to a second Gemini API key from a separate, billing-free Google account/project. The bot tries that key first for every AI request, and only falls back to the paid `GEMINI_API_KEY` if the free key hits its rate/quota limit — invisible to Discord users. This keeps day-to-day usage free and only incurs cost during heavy usage bursts.
+
 ## 🤝 Contributing
 
 Contributions are welcome! Feel free to open issues or submit pull requests.
@@ -392,4 +402,4 @@ For issues or questions, please open an issue on GitHub.
 
 ---
 
-**Status:** ✅ Production Ready | **Version:** 2.0.0 | **Uptime:** ~99.5%
+**Status:** ✅ Production Ready | **Version:** 2.1.0 | **Uptime:** ~99.5%

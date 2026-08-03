@@ -5,7 +5,7 @@ This file provides context for AI assistants (like Claude) working on this proje
 ## Project Overview
 
 **Name:** SumoRobo Discord Bot
-**Version:** 2.0.0
+**Version:** 2.1.0
 **Purpose:** Educational AI-powered Discord bot with intelligent conversation, web search, and file analysis
 **Tech Stack:** Node.js, discord.js v14, Google Gemini 2.5 Flash
 **Deployment:** Render.com (Free tier)
@@ -33,8 +33,15 @@ This file provides context for AI assistants (like Claude) working on this proje
 
 **Required Variables:**
 - `DISCORD_TOKEN` - Discord bot token
-- `GEMINI_API_KEY` - Google Gemini API key
+- `GEMINI_API_KEY` - Google Gemini API key (paid/billed key)
 - `CLIENT_ID` - Discord application ID
+
+**Optional Variables:**
+- `GEMINI_API_KEY_FREE` - A separate, billing-free Gemini API key. Tried first for every AI request; the bot only falls back to the paid `GEMINI_API_KEY` if the free key hits its rate/quota limit. Keeps normal usage free.
+- `SCHOOL_CHANNEL_NAME` - Name of the channel messages get auto-copied to (default: `school`)
+- `BOT_TEST_CHANNEL_NAME` - Name of the channel excluded from auto-copy, for testing (default: `bot_test`)
+- `L2_SUBJECT` - L2 language subject name (default: `Tamil`)
+- `L3_SUBJECT` - L3 language subject name (default: `Hindi`)
 
 ## Code Architecture
 
@@ -49,9 +56,9 @@ let schoolChannelId = null;             // Cached school channel ID
 
 ### System Context (Lines 43-54)
 
-Educational context injected into all AI conversations:
-- **L2 = Tamil** (language subject)
-- **L3 = Hindi** (language subject)
+Educational context injected into all AI conversations, configurable via `L2_SUBJECT`/`L3_SUBJECT`:
+- **L2** (default: Tamil) - language subject
+- **L3** (default: Hindi) - language subject
 
 This context is prepended to every Gemini API call to maintain educational assistant behavior.
 
@@ -164,9 +171,10 @@ useWebSearch = directlyNeedsWebSearch || previousUsedWebSearch
 ### Auto School Message Copying
 1. Runs on EVERY message (before commands)
 2. Skips if already in school channel
-3. Silent operation (no user notification)
-4. Lazy-loads school channel ID
-5. Handles missing channel gracefully
+3. Skips the `bot_test` channel entirely (for testing without polluting #school)
+4. Silent operation (no user notification)
+5. Lazy-loads school channel ID
+6. Handles missing channel gracefully
 
 ### Conversation Context Initialization
 Every path initializes history with:
@@ -203,13 +211,16 @@ Supports: images, documents, audio, video.
 ### 4. Gemini API Rate Limits
 - Free tier: 15 requests/minute
 - 1M tokens/day
-- No retry logic implemented
+- On quota/rate-limit errors, the bot automatically falls back from the free-tier key to the paid key (see `GEMINI_API_KEY_FREE`) — no user-visible retry/error
 
 ### 5. Channel Name Matching
-School channel detection is case-insensitive:
+School/test channel detection is case-insensitive and configurable via `SCHOOL_CHANNEL_NAME`/`BOT_TEST_CHANNEL_NAME` (defaults: `school`/`bot_test`):
 ```javascript
-ch.name.toLowerCase() === 'school'
+ch.name.toLowerCase() === SCHOOL_CHANNEL_NAME
 ```
+
+### 6. Discord Doesn't Render LaTeX
+AI responses are instructed to avoid LaTeX syntax (`$$`, `\times`, `\mathbf`, etc.) and use plain text / Unicode superscripts (e.g. `10¹⁰`) instead, since Discord displays LaTeX as raw text.
 
 ## Development Workflow
 
@@ -342,6 +353,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ---
 
-**Last Updated:** 2025-01-07
+**Last Updated:** 2026-08-03
 **Maintained By:** AI-assisted development (Claude)
 **Primary Maintainer:** coolsumesh

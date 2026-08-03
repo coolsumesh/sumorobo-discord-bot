@@ -19,6 +19,14 @@ const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fetch = require('node-fetch');
 const packageJson = require('./package.json');
 
+// Channel names are configurable so each family/server can name them differently
+const SCHOOL_CHANNEL_NAME = (process.env.SCHOOL_CHANNEL_NAME || 'school').toLowerCase();
+const BOT_TEST_CHANNEL_NAME = (process.env.BOT_TEST_CHANNEL_NAME || 'bot_test').toLowerCase();
+
+// L2/L3 language subjects are configurable so other families can set their own
+const L2_SUBJECT = process.env.L2_SUBJECT || 'Tamil';
+const L3_SUBJECT = process.env.L3_SUBJECT || 'Hindi';
+
 // Create HTTP server for Render
 const PORT = process.env.PORT || 3000;
 http.createServer((req, res) => {
@@ -67,17 +75,17 @@ let schoolChannelId = null;
 
 // System context for language learning
 const SYSTEM_CONTEXT = `You are an educational assistant helping with language learning and school assignments. Important context:
-- L2 = Tamil (Tamil language subject in school)
-- L3 = Hindi (Hindi language subject in school)
+- L2 = ${L2_SUBJECT} (${L2_SUBJECT} language subject in school)
+- L3 = ${L3_SUBJECT} (${L3_SUBJECT} language subject in school)
 
-When the user mentions "L2", they are referring to their Tamil subject/class. When they mention "L3", they are referring to their Hindi subject/class. This is how teachers designate language subjects in assignments and activities.
+When the user mentions "L2", they are referring to their ${L2_SUBJECT} subject/class. When they mention "L3", they are referring to their ${L3_SUBJECT} subject/class. This is how teachers designate language subjects in assignments and activities.
 
 For example:
-- "L2 Pick the Words activity" means a Pick the Words activity for Tamil
-- "L3 homework" means Hindi homework
-- "L2 assignment" means Tamil assignment
+- "L2 Pick the Words activity" means a Pick the Words activity for ${L2_SUBJECT}
+- "L3 homework" means ${L3_SUBJECT} homework
+- "L2 assignment" means ${L2_SUBJECT} assignment
 
-Always interpret L2 as Tamil and L3 as Hindi throughout the conversation, and provide relevant help for these language subjects.
+Always interpret L2 as ${L2_SUBJECT} and L3 as ${L3_SUBJECT} throughout the conversation, and provide relevant help for these language subjects.
 
 Formatting rules for Discord (Discord does NOT render LaTeX):
 - Never use LaTeX syntax like $$, \\(, \\[, \\times, \\mathbf, \\frac, \\rightarrow, etc.
@@ -148,7 +156,8 @@ function needsRealTimeInfo(question) {
 function isSchoolRelated(message) {
   const schoolKeywords = [
     'homework', 'assignment', 'test', 'exam', 'quiz', 'study', 'class', 'teacher',
-    'school', 'subject', 'l2', 'l3', 'tamil', 'hindi', 'math', 'science', 'english',
+    'school', 'subject', 'l2', 'l3', L2_SUBJECT.toLowerCase(), L3_SUBJECT.toLowerCase(),
+    'math', 'science', 'english',
     'chapter', 'lesson', 'textbook', 'notebook', 'project', 'presentation',
     'due date', 'submit', 'submission', 'grade', 'marks', 'score',
     'syllabus', 'curriculum', 'activity', 'worksheet', 'practice'
@@ -162,19 +171,19 @@ function isSchoolRelated(message) {
 async function copyToSchoolChannel(message, client) {
   try {
     // Don't copy messages that are already in the school channel
-    if (message.channel.name && message.channel.name.toLowerCase() === 'school') {
+    if (message.channel.name && message.channel.name.toLowerCase() === SCHOOL_CHANNEL_NAME) {
       return;
     }
 
     // Don't copy messages from the bot testing channel
-    if (message.channel.name && message.channel.name.toLowerCase() === 'bot_test') {
+    if (message.channel.name && message.channel.name.toLowerCase() === BOT_TEST_CHANNEL_NAME) {
       return;
     }
 
     // Find the school channel if not already found
     if (!schoolChannelId) {
       const channels = await message.guild.channels.fetch();
-      const schoolChannel = channels.find(ch => ch.name && ch.name.toLowerCase() === 'school');
+      const schoolChannel = channels.find(ch => ch.name && ch.name.toLowerCase() === SCHOOL_CHANNEL_NAME);
 
       if (schoolChannel) {
         schoolChannelId = schoolChannel.id;
