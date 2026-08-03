@@ -7,7 +7,7 @@ This file provides context for AI assistants (like Claude) working on this proje
 **Name:** SumoRobo Discord Bot
 **Version:** 2.1.0
 **Purpose:** Educational AI-powered Discord bot with intelligent conversation, web search, and file analysis
-**Tech Stack:** Node.js, discord.js v14, Google Gemini 2.5 Flash
+**Tech Stack:** Node.js, discord.js v14, Google Gemini (`gemini-flash-latest` alias — resolves to whatever Google's current Flash model is, currently Gemini 3.6 Flash as of 2026-08)
 **Deployment:** Render.com (Free tier)
 
 ## Core Architecture
@@ -210,8 +210,7 @@ Uses file extension, not Content-Type header.
 Supports: images, documents, audio, video.
 
 ### 4. Gemini API Rate Limits
-- Free tier: 15 requests/minute
-- 1M tokens/day
+- Free-tier limits depend on whatever model `gemini-flash-latest` currently resolves to and change over time — don't hardcode a specific number here, check https://ai.google.dev/gemini-api/docs/rate-limits if it matters
 - On quota/rate-limit errors, the bot automatically falls back from the free-tier key to the paid key (see `GEMINI_API_KEY_FREE`) — no user-visible retry/error
 
 ### 5. Channel Name Matching

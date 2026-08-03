@@ -1,11 +1,11 @@
 # SumoRobo Discord Bot
 
-A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring intelligent conversation, real-time web search, and multi-format file analysis.
+A powerful AI-powered Discord bot built with Google Gemini, featuring intelligent conversation, real-time web search, and multi-format file analysis.
 
 ## 🌟 Features
 
 ### AI Capabilities
-- **Intelligent Conversations** - Powered by Google Gemini 2.5 Flash AI model
+- **Intelligent Conversations** - Powered by Google's Gemini AI model (always the latest Flash release, via the `gemini-flash-latest` alias)
 - **Automatic Web Search** - Detects when questions need current information and searches the web automatically
 - **Persistent Web Search** - Follow-up questions maintain web search mode for continuous real-time information
 - **Conversation Memory** - Remembers context within each Discord channel for natural follow-up questions
@@ -34,7 +34,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 - **Language:** Node.js (JavaScript)
 - **Discord API:** discord.js v14
-- **AI Model:** Google Gemini 2.5 Flash
+- **AI Model:** Google Gemini (`gemini-flash-latest` alias, always the current Flash release)
 - **File Processing:** Native Gemini file handling
 - **Hosting:** Render.com (Free tier)
 - **Monitoring:** UptimeRobot + Render Health Checks
@@ -380,7 +380,7 @@ The full list lives in `schoolKeywords` in `config.json` — add or remove words
 
 ### Rate Limits
 
-- **Gemini API:** 15 requests/minute, 1M tokens/day (free tier)
+- **Gemini API:** Free-tier request/token limits depend on whatever model `gemini-flash-latest` currently resolves to, and change over time — check [Google's current rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) rather than relying on a number here. This is exactly why `GEMINI_API_KEY_FREE` (see Cost section) exists — a paid fallback key absorbs whatever the free tier's limit turns out to be.
 - **Discord:** Standard rate limits apply
 - **File size limit:** 20MB per file
 
@@ -406,7 +406,7 @@ The full list lives in `schoolKeywords` in `config.json` — add or remove words
 
 **Free tier includes:**
 - Render: Free (with 400 build hours/month)
-- Google Gemini API: Free (15 req/min, 1M tokens/day)
+- Google Gemini API: Free, up to whatever [Google's current free-tier limits](https://ai.google.dev/gemini-api/docs/rate-limits) are for the active model — see Rate Limits below
 - Discord Bot: Free
 - UptimeRobot: Free (50 monitors, 5-min checks)
 
