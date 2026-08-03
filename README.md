@@ -56,7 +56,42 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 - Discord account
 - Google AI Studio account (for Gemini API)
 
+### Discord Server Setup
+
+If you don't already have a Discord account/server for your family, start here.
+
+1. Go to [discord.com](https://discord.com) and create a free account (or download the desktop/mobile app — either works)
+2. Create a server: click the **+** icon in the left sidebar → **Create My Own** → give it a name (e.g. "Our Family")
+3. Create the channels the bot uses: right-click **TEXT CHANNELS** in your server's sidebar → **Create Channel** → name it `school` (a place where school-related messages get collected)
+4. Optionally repeat step 3 to create a `bot_test` channel (a private space for you to test bot commands — see the note about hiding it from kids further below)
+5. Invite your kids/family to the server: click the server name → **Invite People**, and share the invite link
+
+### Discord Bot Setup
+
+Do this first — you'll need the values it gives you (`CLIENT_ID`, `DISCORD_TOKEN`) for the Installation steps below.
+
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application
+3. On the **General Information** tab, copy the **Application ID** — this is your `CLIENT_ID`
+4. Go to **Bot** tab and create a bot
+5. Enable **Message Content Intent** under Privileged Gateway Intents
+6. Copy the bot token — this is your `DISCORD_TOKEN`
+7. Go to **OAuth2 → URL Generator**
+   - Scopes: `bot`, `applications.commands`
+   - Bot Permissions: `Send Messages`, `Read Messages/View Channels`, `Read Message History`
+8. Use the generated URL to invite the bot to your server
+
+### Gemini API Setup
+
+Also do this first — you'll need the key (`GEMINI_API_KEY`) for the Installation steps below.
+
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Click **"Create API Key"**
+3. Copy the API key
+
 ### Installation
+
+By now you should have your `CLIENT_ID`, `DISCORD_TOKEN`, and `GEMINI_API_KEY` from the two sections above.
 
 1. **Get your own copy of the repository**
 
@@ -111,6 +146,8 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    - `schoolKeywords` - the list of words that trigger auto-copying a message to your school channel; add or remove freely
 
 5. **Register slash commands**
+
+   Not comfortable with the terminal? Double-click **`register-commands.bat`** (Windows) or **`register-commands.command`** (Mac) instead — it does the same thing as the commands below, using your `.env` file. (On Mac, right-click → Open the first time, since it's from an unidentified developer.)
 ```bash
    # For development bot
    npm run register:dev
@@ -127,26 +164,6 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    # Production
    npm start
 ```
-
-### Discord Bot Setup
-
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. On the **General Information** tab, copy the **Application ID** — this is your `CLIENT_ID`
-4. Go to **Bot** tab and create a bot
-5. Enable **Message Content Intent** under Privileged Gateway Intents
-6. Copy the bot token — this is your `DISCORD_TOKEN`
-7. Go to **OAuth2 → URL Generator**
-   - Scopes: `bot`, `applications.commands`
-   - Bot Permissions: `Send Messages`, `Read Messages/View Channels`, `Read Message History`
-8. Use the generated URL to invite the bot to your server
-
-### Gemini API Setup
-
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Click **"Create API Key"**
-3. Copy the API key
-4. Add to your `.env` file
 
 ## 🌐 Deployment (Render)
 
@@ -278,11 +295,12 @@ Bot: [Remembers context and answers about Python's uses]
 sumorobo-discord-bot/
 ├── index.js                 # Main bot file
 ├── register-commands.js     # Slash command registration
-├── config.json             # Non-sensitive settings: channel names, L2/L3 subjects, keywords
+├── register-commands.bat    # Windows double-click wrapper to register commands
+├── register-commands.command # Mac double-click wrapper to register commands
+├── config.json             # Non-sensitive settings: channel names, subject designations, keywords
 ├── package.json            # Dependencies and scripts
 ├── .env                    # Production environment variables - credentials only (not in git)
 ├── .env.dev               # Development environment variables - credentials only (not in git)
-├── .env.prod              # Production environment template (not in git)
 ├── .gitignore             # Git ignore file
 └── README.md              # This file
 ```
@@ -291,17 +309,16 @@ sumorobo-discord-bot/
 
 ### Available Scripts
 ```bash
-npm run dev           # Run development bot
-npm run prod          # Run production bot
-npm run register:dev  # Register commands for dev bot
-npm run register:prod # Register commands for prod bot
+npm run dev           # Run development bot (uses .env.dev)
+npm run prod          # Run production bot locally (uses .env)
+npm run register:dev  # Register commands for dev bot (uses .env.dev)
+npm run register:prod # Register commands for prod bot (uses .env)
 ```
 
 ### Environment Files
 
-- `.env` - Production bot configuration
+- `.env` - Production bot configuration, used for local production testing and by `register-commands.bat`/`.command`. Render itself doesn't read this file — it uses the environment variables you set in its dashboard instead, which should hold the same values.
 - `.env.dev` - Development bot configuration
-- `.env.prod` - Production environment template
 
 ### Two-Bot Setup
 
@@ -359,6 +376,7 @@ The full list lives in `schoolKeywords` in `config.json` — add or remove words
 - Bot will automatically find and use this channel
 - No additional configuration needed
 - Optional: create a channel named "bot_test" (or set `botTestChannelName` in `config.json`) for testing the bot without triggering auto-copies to your school channel
+  - Consider setting this channel's permissions so only you (the parent/admin) can view it — that way it stays a private space for testing bot commands without kids seeing it or being tempted to use it instead of the real channels
 
 ### Rate Limits
 

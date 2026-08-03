@@ -27,9 +27,8 @@ This file provides context for AI assistants (like Claude) working on this proje
 ```
 
 ### Environment Files
-- `.env` - Production configuration (credentials only)
+- `.env` - Production configuration (credentials only). Used for local production testing (`npm run prod`/`register:prod`) and by `register-commands.bat`/`.command`. Render itself doesn't read this file — it injects the same-named env vars directly via its dashboard.
 - `.env.dev` - Development configuration (credentials only)
-- `.env.prod` - Production template
 
 Env vars are reserved for sensitive/credential values only. Non-sensitive, per-deployment settings live in `config.json` instead (see below) so they're plain-editable content, not treated as secrets.
 
@@ -229,7 +228,7 @@ AI responses are instructed to avoid LaTeX syntax (`$$`, `\times`, `\mathbf`, et
 ### Running Locally
 ```bash
 npm run dev          # Uses .env.dev
-npm run prod         # Uses .env.prod
+npm run prod         # Uses .env
 npm start            # Uses .env (default)
 ```
 
@@ -316,7 +315,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ## Important Files
 
 ### Do Not Commit
-- `.env`, `.env.dev`, `.env.prod` - Contains secrets
+- `.env`, `.env.dev` - Contains secrets
 - `node_modules/` - Dependencies
 
 ### Must Commit

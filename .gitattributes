@@ -1,0 +1,2 @@
+register-commands.command text eol=lf
+register-commands.bat text eol=crlf

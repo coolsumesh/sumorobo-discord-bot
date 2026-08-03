@@ -6,9 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js .env.dev",
-    "prod": "node index.js .env.prod",
+    "prod": "node index.js .env",
     "register:dev": "node register-commands.js .env.dev",
-    "register:prod": "node register-commands.js .env.prod"
+    "register:prod": "node register-commands.js .env"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
