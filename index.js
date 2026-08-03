@@ -164,6 +164,11 @@ async function copyToSchoolChannel(message, client) {
       return;
     }
 
+    // Don't copy messages from the bot testing channel
+    if (message.channel.name && message.channel.name.toLowerCase() === 'bot_test') {
+      return;
+    }
+
     // Find the school channel if not already found
     if (!schoolChannelId) {
       const channels = await message.guild.channels.fetch();
