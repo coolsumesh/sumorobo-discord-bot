@@ -442,7 +442,7 @@ That opens a pull request on the original repo for review — I'll take a look a
 
 ## 📄 License
 
-MIT License
+GNU Affero General Public License v3.0 (AGPL-3.0) — see [LICENSE](./LICENSE). You're free to use, modify, and self-host this for your own family. If you modify it and run it as a service others interact with over a network (not just your own personal use), AGPL-3.0 requires you to make your modified source available to those users too.
 
 ## 🙏 Acknowledgments
 

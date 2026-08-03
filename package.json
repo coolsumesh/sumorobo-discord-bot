@@ -3,6 +3,7 @@
   "version": "2.2.0",
   "description": "Discord bot with AI and multi-format file support",
   "main": "index.js",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js .env.dev",
