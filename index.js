@@ -29,7 +29,30 @@ http.createServer((req, res) => {
 });
 
 // Initialize Gemini (uses gemini-flash-latest alias so it doesn't break when versions retire)
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// GEMINI_API_KEY_FREE (optional) is tried first; on quota/rate-limit errors we
+// silently fall back to the paid GEMINI_API_KEY, invisible to Discord users.
+const genAIPaid = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAIFree = process.env.GEMINI_API_KEY_FREE
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY_FREE)
+  : null;
+
+function isQuotaError(error) {
+  return error?.status === 429 || /429|quota|rate.?limit/i.test(error?.message || '');
+}
+
+// Runs callFn(client) against the free-tier client first (if configured),
+// falling back to the paid client only on a quota/rate-limit error.
+async function withGeminiFallback(callFn) {
+  if (genAIFree) {
+    try {
+      return await callFn(genAIFree);
+    } catch (error) {
+      if (!isQuotaError(error)) throw error;
+      console.log('⚠️ Free tier quota hit, falling back to paid Gemini key');
+    }
+  }
+  return await callFn(genAIPaid);
+}
 
 // Store conversation history per channel
 const conversationHistory = new Map();
@@ -229,22 +252,22 @@ async function handleFileWithGemini(fileUrl, fileName, question) {
     // Convert buffer to base64
     const base64Data = buffer.toString('base64');
     
-    // Send to Gemini with inline data
-    const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
-
     const prompt = `${SYSTEM_CONTEXT}\n\nI've attached a file (${fileName}). ${question}\n\nPlease analyze the file and provide a clear, concise answer. Keep your response under 3500 characters while being comprehensive.`;
-    
+
     console.log('Sending to Gemini...');
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Data
-        }
-      },
-      prompt
-    ]);
-    
+    const result = await withGeminiFallback(async (client) => {
+      const model = client.getGenerativeModel({ model: 'gemini-flash-latest' });
+      return await model.generateContent([
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        },
+        prompt
+      ]);
+    });
+
     const geminiResponse = result.response;
     const answer = geminiResponse.text();
     
@@ -323,16 +346,17 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
       }
 
       // Use Gemini with Google Search grounding
-      const model = genAI.getGenerativeModel({
-        model: 'gemini-flash-latest',
-        tools: [{
-          googleSearch: {}
-        }]
-      });
-
       const prompt = `${SYSTEM_CONTEXT}\n\n${question}\n\nPlease provide a clear and concise answer with current, up-to-date information. Keep your response under 3500 characters while being comprehensive.`;
 
-      const result = await model.generateContent(prompt);
+      const result = await withGeminiFallback(async (client) => {
+        const model = client.getGenerativeModel({
+          model: 'gemini-flash-latest',
+          tools: [{
+            googleSearch: {}
+          }]
+        });
+        return await model.generateContent(prompt);
+      });
       const response = result.response;
       let answer = response.text();
 
@@ -378,11 +402,12 @@ async function handleAIQuestion(question, channelId, replyFunction, fileData = n
     const history = conversationHistory.get(channelId);
     const prompt = `${question}\n\nPlease provide a clear and concise answer. Keep your response under 3500 characters while being comprehensive.`;
 
-    const chat = genAI.getGenerativeModel({ model: 'gemini-flash-latest' }).startChat({
-      history: history,
+    const result = await withGeminiFallback(async (client) => {
+      const chat = client.getGenerativeModel({ model: 'gemini-flash-latest' }).startChat({
+        history: history,
+      });
+      return await chat.sendMessage(prompt);
     });
-
-    const result = await chat.sendMessage(prompt);
     const response = result.response;
     let answer = response.text();
 
