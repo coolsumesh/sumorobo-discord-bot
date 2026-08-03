@@ -430,7 +430,15 @@ Set `GEMINI_API_KEY_FREE` to a second Gemini API key from a separate, billing-fr
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open issues or submit pull requests.
+Built something useful on your fork (a new feature, a bug fix) and want to share it back? Here's how, entirely through GitHub's website — no terminal needed even if you made your changes there:
+
+1. Make sure your changes are committed to your fork's `main` branch (if you edited files directly on GitHub, this already happened automatically)
+2. Go to your fork on GitHub — it'll show a banner like "This branch is X commits ahead of coolsumesh/sumorobo-discord-bot:main"
+3. Click **"Contribute"** → **"Open pull request"** (or go to the **Pull requests** tab → **"New pull request"**)
+4. Review the changes GitHub shows you, add a title and short description of what you added/fixed
+5. Click **"Create pull request"**
+
+That opens a pull request on the original repo for review — I'll take a look and merge it if it fits.
 
 ## 📄 License
 
