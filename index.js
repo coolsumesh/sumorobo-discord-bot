@@ -45,7 +45,9 @@ function isQuotaError(error) {
 async function withGeminiFallback(callFn) {
   if (genAIFree) {
     try {
-      return await callFn(genAIFree);
+      const result = await callFn(genAIFree);
+      console.log('✅ Used free tier Gemini key'); // TEMP: remove once fallback is confirmed working
+      return result;
     } catch (error) {
       if (!isQuotaError(error)) throw error;
       console.log('⚠️ Free tier quota hit, falling back to paid Gemini key');
