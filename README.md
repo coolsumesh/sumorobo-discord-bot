@@ -439,4 +439,4 @@ For issues or questions, please open an issue on GitHub.
 
 ---
 
-**Status:** ✅ Production Ready | **Version:** 2.1.0 | **Uptime:** ~99.5%
+**Status:** ✅ Production Ready | **Version:** 2.2.0

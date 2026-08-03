@@ -5,7 +5,7 @@ This file provides context for AI assistants (like Claude) working on this proje
 ## Project Overview
 
 **Name:** SumoRobo Discord Bot
-**Version:** 2.1.0
+**Version:** 2.2.0
 **Purpose:** Educational AI-powered Discord bot with intelligent conversation, web search, and file analysis
 **Tech Stack:** Node.js, discord.js v14, Google Gemini (`gemini-flash-latest` alias — resolves to whatever Google's current Flash model is, currently Gemini 3.6 Flash as of 2026-08)
 **Deployment:** Render.com (Free tier)
@@ -13,8 +13,10 @@ This file provides context for AI assistants (like Claude) working on this proje
 ## Core Architecture
 
 ### Entry Point
-- `index.js` - Main bot file (~450 lines)
+- `index.js` - Main bot file
 - `register-commands.js` - Slash command registration
+- `register-commands.bat` / `register-commands.command` - Double-click wrappers around `register-commands.js` for non-technical setup (Windows/Mac)
+- `config.json` - Non-sensitive settings (see below)
 
 ### Key Dependencies
 ```json
@@ -52,13 +54,12 @@ Non-sensitive, per-deployment settings that other families/servers would want to
 ### State Management (index.js)
 
 ```javascript
-// Lines 34-40
 const conversationHistory = new Map();  // Per-channel conversation context
 const lastUsedWebSearch = new Map();    // Per-channel web search persistence
-let schoolChannelId = null;             // Cached school channel ID
+let schoolChannelId = undefined;        // Cached school channel ID (undefined = not looked up, null = confirmed missing)
 ```
 
-### System Context (Lines 43-54)
+### System Context
 
 Educational context injected into all AI conversations, set via the `subjects` array in `config.json` (each a `{ designation, name, description }` object). If the array is empty, this section is omitted from the prompt entirely. Not limited to L2/L3 — any number of arbitrary designations are supported.
 
@@ -66,58 +67,61 @@ This context is prepended to every Gemini API call to maintain educational assis
 
 ### Core Functions
 
-#### 1. `handleAIQuestion(question, channelId, replyFunction, fileData)` (Lines 144-303)
+Line numbers deliberately aren't cited below - they drift with every edit. Use Grep for function names instead of trusting stale line references.
+
+#### 1. `handleAIQuestion(question, channelId, replyFunction, fileData)`
 Main AI interaction handler with three execution paths:
 
-**Path A: File Analysis** (Lines 147-186)
+**Path A: File Analysis**
 - Uses `handleFileWithGemini()` for file processing
 - Supports PDFs, images, documents, audio, video
 - Base64 encoding for Gemini inline data
 - Clears web search flag
 
-**Path B: Web Search** (Lines 188-250)
+**Path B: Web Search**
 - Triggered by real-time keywords OR previous web search
 - Uses Gemini with `googleSearch` tool
 - Persistent mode: follow-ups inherit web search
 - Green embed (0x00FF00)
 
-**Path C: Regular Conversation** (Lines 252-296)
+**Path C: Regular Conversation**
 - Uses conversation history
 - Maintains context across messages
 - Blue embed (0x5865F2)
 
-#### 2. `handleFileWithGemini(fileUrl, fileName, question)` (Lines 172-206)
+#### 2. `handleFileWithGemini(fileUrl, fileName, question)`
 - Fetches file from Discord CDN
 - Converts to base64
 - Determines MIME type via `getMimeType()`
 - Sends to Gemini with system context
 
-#### 3. `isSchoolRelated(message)` (Lines 96-107)
+#### 3. `isSchoolRelated(message)`
 Keyword detection for auto-copying to school channel:
-- 25+ educational keywords
+- Keywords come from `config.json`'s `schoolKeywords`, plus each configured subject's `designation`/`name` appended at runtime
 - Case-insensitive matching
 - Returns boolean
 
-#### 4. `copyToSchoolChannel(message, client)` (Lines 110-170)
-- Finds/caches school channel by name
+#### 4. `copyToSchoolChannel(message, client)`
+- Finds/caches school channel by name (and caches a "not found" result too, so it doesn't keep re-fetching on servers without one)
 - Creates orange embed (0xFFA500)
 - Includes author, content, source channel, jump link
 - Handles image attachments
 
-#### 5. `needsRealTimeInfo(question)` (Lines 83-93)
+#### 5. `needsRealTimeInfo(question)`
 Real-time keyword detection:
-- Date-related: "today", "latest", "current", "2025", etc.
+- Date-related: "today", "latest", "current", and literal year strings hardcoded in `realTimeKeywords` (currently `'2025'`, `'2026'`, `'2027'`) - this list does NOT auto-update, so it'll silently stop matching bare year mentions once the hardcoded years are exhausted. Worth moving to config.json or computing dynamically at some point.
 - Dynamic content: "news", "weather", "stock price"
 - Event-related: "who won", "what happened"
 
 ### Message Handlers
 
-#### Slash Commands (Lines 424-470)
+#### Slash Commands
 - `/ping` - Version info embed
 - `/hello` - Simple greeting
 - `/ask` - AI question with deferred reply
+- `/clear` - Clear conversation history
 
-#### Text Commands (Lines 481-449)
+#### Text Commands
 - `!ping` - Version info embed
 - `!hello` - Simple greeting
 - `.clear` - Clear conversation history + web search flag
@@ -125,13 +129,13 @@ Real-time keyword detection:
 - `.ask [question]` - AI question
 - `[message ending with ?]` - Auto-invoke AI
 
-### Auto-Features (Lines 279-282)
+### Auto-Features
 
 **School Message Copying:**
 Runs silently on every non-bot message before command processing.
 
 **Question Mark Trigger:**
-Messages ending with `?` automatically invoke AI (Lines 423-448).
+Messages ending with `?` automatically invoke AI.
 
 ## Important Patterns
 
@@ -257,29 +261,30 @@ http.createServer((req, res) => {
 ```
 
 ### Environment Variables (Render)
-Set in Render dashboard:
+Set in Render dashboard (credentials only - everything else comes from `config.json` in the repo):
 - `DISCORD_TOKEN`
 - `GEMINI_API_KEY`
 - `CLIENT_ID`
+- `GEMINI_API_KEY_FREE` (optional)
 
 ## Future Considerations
 
 ### Potential Improvements
 1. **Database Integration** - Persistent conversation history
-2. **User Preferences** - Per-user L2/L3 mappings
+2. **Per-user subject preferences** - `subjects` in config.json is per-deployment (whole server), not per-Discord-user
 3. **Analytics** - Usage tracking, popular queries
 4. **Rate Limiting** - Per-user command throttling
-5. **Error Retry** - Exponential backoff for API failures
-6. **Custom School Channels** - Multi-channel mapping
+5. **Error Retry** - Exponential backoff for API failures (partially covered by the free/paid Gemini key fallback, but no retry within a single key)
+6. **Custom School Channels** - Multi-channel mapping (currently one school channel per deployment; name is configurable but not multiple destinations)
 7. **Webhook Logging** - Centralized error reporting
+8. **Dynamic real-time-keyword years** - `needsRealTimeInfo()`'s hardcoded year list (`'2025'`, `'2026'`, `'2027'`) will need manual updates or a dynamic replacement eventually
 
 ### Known Limitations
 1. Conversation history lost on restart
-2. School channel must be named "school"
-3. No database (all state in-memory)
-4. Single L2/L3 mapping for all users
-5. No message pagination for long responses
-6. Web search flag never auto-clears on topic change
+2. No database (all state in-memory)
+3. Subject designations (`subjects` in config.json) apply server-wide, not per-user
+4. No message pagination for long responses
+5. Web search flag never auto-clears on topic change
 
 ## Contributing Guidelines
 
@@ -320,6 +325,9 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 ### Must Commit
 - `index.js` - Main bot logic
 - `register-commands.js` - Command registration
+- `register-commands.bat` / `register-commands.command` - Non-technical setup wrappers
+- `config.json` - Non-sensitive settings (this is how Render picks up channel names/subjects - there's no env var for these)
+- `.gitattributes` - Locks LF/executable bit on `register-commands.command` so it stays double-clickable on Mac regardless of the committing machine's git config
 - `package.json` - Dependencies and version
 - `README.md` - User documentation
 - `claude.md` - This file (AI context)

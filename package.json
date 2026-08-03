@@ -1,6 +1,6 @@
 {
   "name": "sumorobo-bot",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Discord bot with AI and multi-format file support",
   "main": "index.js",
   "scripts": {
