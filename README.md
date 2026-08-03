@@ -10,7 +10,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 - **Persistent Web Search** - Follow-up questions maintain web search mode for continuous real-time information
 - **Conversation Memory** - Remembers context within each Discord channel for natural follow-up questions
 - **Multi-Format File Support** - Analyze PDFs, Word documents, images, text files, and more
-- **Language Learning Context** - Built-in understanding of L2/L3 language subjects for educational assistance, configurable per family (defaults: L2=Tamil, L3=Hindi)
+- **Subject Designation Context** - Optional built-in understanding of however your child's school labels subjects (L2/L3 or anything else), configured per family via the `subjects` array in `config.json` (leave it empty if your school doesn't use this kind of labeling)
 - **Discord-Friendly Formatting** - Math and exponents (e.g. 10¹⁰) render as clean text/Unicode instead of raw LaTeX, since Discord doesn't support LaTeX rendering
 
 ### Commands
@@ -58,9 +58,13 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 ### Installation
 
-1. **Clone the repository**
+1. **Get your own copy of the repository**
+
+   Click **"Fork"** at the top of this repo on GitHub to create your own copy under your account. You'll need this because deploying to Render (below) connects to a GitHub repo you own, and `git push` only works on a repo you have write access to.
+
+   Then clone your fork:
 ```bash
-   git clone https://github.com/coolsumesh/sumorobo-discord-bot.git
+   git clone https://github.com/YOUR_USERNAME/sumorobo-discord-bot.git
    cd sumorobo-discord-bot
 ```
 
@@ -69,18 +73,14 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    npm install
 ```
 
-3. **Set up environment variables**
-   
+3. **Set up environment variables** (credentials only — see step 4 for everything else)
+
    Create `.env` file for production:
 ```env
    DISCORD_TOKEN=your_discord_bot_token
    GEMINI_API_KEY=your_gemini_api_key
    CLIENT_ID=your_bot_application_id
    GEMINI_API_KEY_FREE=your_free_tier_gemini_api_key   # optional, see Cost section
-   SCHOOL_CHANNEL_NAME=school     # optional, defaults to "school"
-   BOT_TEST_CHANNEL_NAME=bot_test # optional, defaults to "bot_test"
-   L2_SUBJECT=Tamil                # optional, defaults to "Tamil"
-   L3_SUBJECT=Hindi                # optional, defaults to "Hindi"
 ```
 
    Create `.env.dev` file for development:
@@ -90,7 +90,27 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    CLIENT_ID=your_dev_bot_application_id
 ```
 
-4. **Register slash commands**
+4. **Edit `config.json`** for non-sensitive settings (channel names, subject designations, keywords)
+```json
+   {
+     "schoolChannelName": "school",
+     "botTestChannelName": "bot_test",
+     "subjects": [
+       { "designation": "L2", "name": "Spanish", "description": "second language subject in school" }
+     ],
+     "schoolKeywords": ["homework", "assignment", "..."]
+   }
+```
+   - `schoolChannelName` / `botTestChannelName` - rename these if your server uses different channel names
+   - `subjects` - a list of however your school labels subjects in assignments. Each entry needs:
+     - `designation` - the label your school actually uses (e.g. `"L2"`, `"Second Language"`, `"Elective 1"` — whatever your teachers write)
+     - `name` - the real subject (e.g. `"Spanish"`)
+     - `description` - how to explain it to the bot (e.g. `"second language subject in school"`) — not limited to languages, describe it however fits your curriculum
+
+     Add as many entries as you need, or leave the array empty (`[]`) if your school doesn't use designations like this at all.
+   - `schoolKeywords` - the list of words that trigger auto-copying a message to your school channel; add or remove freely
+
+5. **Register slash commands**
 ```bash
    # For development bot
    npm run register:dev
@@ -99,7 +119,7 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
    npm run register:prod
 ```
 
-5. **Run the bot**
+6. **Run the bot**
 ```bash
    # Development
    npm run dev
@@ -112,13 +132,14 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
 2. Create a new application
-3. Go to **Bot** tab and create a bot
-4. Enable **Message Content Intent** under Privileged Gateway Intents
-5. Copy the bot token
-6. Go to **OAuth2 → URL Generator**
+3. On the **General Information** tab, copy the **Application ID** — this is your `CLIENT_ID`
+4. Go to **Bot** tab and create a bot
+5. Enable **Message Content Intent** under Privileged Gateway Intents
+6. Copy the bot token — this is your `DISCORD_TOKEN`
+7. Go to **OAuth2 → URL Generator**
    - Scopes: `bot`, `applications.commands`
    - Bot Permissions: `Send Messages`, `Read Messages/View Channels`, `Read Message History`
-7. Use the generated URL to invite the bot to your server
+8. Use the generated URL to invite the bot to your server
 
 ### Gemini API Setup
 
@@ -135,10 +156,10 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 ### Steps
 
-1. **Push code to GitHub**
+1. **Push code to GitHub** (make sure your `config.json` edits from step 4 above are committed — that's how Render picks up your channel names/subjects, there's no env var for these)
 ```bash
    git add .
-   git commit -m "Initial commit"
+   git commit -m "Configure for my server"
    git push
 ```
 
@@ -150,10 +171,11 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
      - **Build Command:** `npm install`
      - **Start Command:** `npm start`
      - **Instance Type:** Free
-   - Add environment variables:
-     - `DISCORD_TOKEN`
-     - `GEMINI_API_KEY`
-     - `CLIENT_ID`
+   - Add environment variables (credentials only — everything else comes from `config.json` in your repo):
+     - `DISCORD_TOKEN` (required)
+     - `GEMINI_API_KEY` (required)
+     - `CLIENT_ID` (required)
+     - `GEMINI_API_KEY_FREE` (optional — see Cost section)
    - Click **"Create Web Service"**
 
 3. **Set up health checks** (in Render Settings)
@@ -167,9 +189,9 @@ A powerful AI-powered Discord bot built with Google Gemini 2.5 Flash, featuring 
 
 ## 📊 Monitoring
 
-- **Status Page:** https://stats.uptimerobot.com/svhTjEciNu
+- **Status Page:** If you set up UptimeRobot with a public status page, its URL goes here
 - **Render Dashboard:** Check logs and deployments
-- **Health Check:** `https://sumorobo-discord-bot.onrender.com/` should return "SumoRobo Bot is running!"
+- **Health Check:** `https://your-app-name.onrender.com/` should return "SumoRobo Bot is running!"
 
 ## 🎯 Usage Examples
 
@@ -217,13 +239,13 @@ Bot: [Provides analysis]
 User: Can you elaborate? (continues the conversation with context)
 ```
 
-### Language Learning (L2/L3 Context)
+### Subject Designation Context (example using L2/L3 designations)
 ```
 User: .ask Help me with my L2 Pick the Words activity
-Bot: [Provides help with Tamil language activity]
+Bot: [Provides help with your configured L2 subject]
 
 User: What homework do I have for L3?
-Bot: [Understands L3 = Hindi and responds accordingly]
+Bot: [Understands L3 = your configured L3 subject and responds accordingly]
 ```
 
 ### Auto School Message Copying
@@ -256,9 +278,10 @@ Bot: [Remembers context and answers about Python's uses]
 sumorobo-discord-bot/
 ├── index.js                 # Main bot file
 ├── register-commands.js     # Slash command registration
+├── config.json             # Non-sensitive settings: channel names, L2/L3 subjects, keywords
 ├── package.json            # Dependencies and scripts
-├── .env                    # Production environment variables (not in git)
-├── .env.dev               # Development environment variables (not in git)
+├── .env                    # Production environment variables - credentials only (not in git)
+├── .env.dev               # Development environment variables - credentials only (not in git)
 ├── .env.prod              # Production environment template (not in git)
 ├── .gitignore             # Git ignore file
 └── README.md              # This file
@@ -295,13 +318,14 @@ The project supports separate development and production bots:
 - **Audio:** MP3, WAV, M4A
 - **Video:** MP4, MOV, AVI
 
-### Language Learning Context
+### Subject Designation Context
 
-The bot understands educational language subject designations, configurable via `L2_SUBJECT`/`L3_SUBJECT` (defaults: Tamil/Hindi):
-- **L2** = your configured L2 subject (e.g. Tamil)
-- **L3** = your configured L3 subject (e.g. Hindi)
+The bot optionally understands however your child's school labels subjects in assignments, set via the `subjects` array in `config.json`. Each entry has:
+- `designation` - the label your school actually uses (e.g. `"L2"`, `"Second Language"`, `"Elective 1"`) — not limited to "L2"/"L3", use whatever your teachers write
+- `name` - the real subject (e.g. `"Spanish"`, `"Tamil"`)
+- `description` - how to explain it to the bot (e.g. `"second language subject in school"`) — not limited to languages, describe it however fits your curriculum
 
-This context is automatically applied to all conversations, so when teachers or students mention "L2 assignment" or "L3 homework", the bot understands which language subject is being referenced. Set `L2_SUBJECT`/`L3_SUBJECT` to whatever second/third language subjects your child's school uses.
+Add one entry per designation your school uses, or leave the array empty if it doesn't use this kind of labeling at all — the bot works fine either way. When configured, this context is automatically applied to all conversations, so when teachers or students mention "L2 assignment" (or whatever your configured designation is), the bot understands which subject is being referenced.
 
 ### Auto Web Search Keywords
 
@@ -327,19 +351,14 @@ The bot automatically monitors all messages and copies school-related content to
 - Works silently in the background
 
 **School-related keywords detected:**
-- `homework`, `assignment`, `test`, `exam`, `quiz`, `study`
-- `class`, `teacher`, `school`, `subject`
-- `l2`, `l3`, `tamil`, `hindi`, `math`, `science`, `english`
-- `chapter`, `lesson`, `textbook`, `notebook`
-- `project`, `presentation`, `worksheet`, `practice`
-- `due date`, `submit`, `submission`, `grade`, `marks`
-- And more educational terms
+
+The full list lives in `schoolKeywords` in `config.json` — add or remove words freely, no code changes needed. Out of the box it includes things like `homework`, `assignment`, `test`, `exam`, `quiz`, `study`, `class`, `teacher`, `school`, `subject`, `chapter`, `lesson`, `textbook`, `project`, `worksheet`, `due date`, `submit`, `grade`, and more. Each configured entry in `subjects` (both its `designation` and `name`) is automatically added on top of this list.
 
 **Setup requirements:**
-- Create a Discord channel named "school" (case-insensitive), or set `SCHOOL_CHANNEL_NAME` to whatever you named it
+- Create a Discord channel named "school" (case-insensitive), or set `schoolChannelName` in `config.json` to whatever you named it
 - Bot will automatically find and use this channel
 - No additional configuration needed
-- Optional: create a channel named "bot_test" (or set `BOT_TEST_CHANNEL_NAME`) for testing the bot without triggering auto-copies to your school channel
+- Optional: create a channel named "bot_test" (or set `botTestChannelName` in `config.json`) for testing the bot without triggering auto-copies to your school channel
 
 ### Rate Limits
 

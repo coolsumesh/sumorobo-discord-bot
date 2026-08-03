@@ -1,0 +1,15 @@
+{
+  "schoolChannelName": "school",
+  "botTestChannelName": "bot_test",
+  "subjects": [
+    { "designation": "L2", "name": "Tamil", "description": "second language subject in school" },
+    { "designation": "L3", "name": "Hindi", "description": "third language subject in school" }
+  ],
+  "schoolKeywords": [
+    "homework", "assignment", "test", "exam", "quiz", "study", "class", "teacher",
+    "school", "subject", "math", "science", "english",
+    "chapter", "lesson", "textbook", "notebook", "project", "presentation",
+    "due date", "submit", "submission", "grade", "marks", "score",
+    "syllabus", "curriculum", "activity", "worksheet", "practice"
+  ]
+}

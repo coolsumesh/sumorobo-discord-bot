@@ -27,21 +27,26 @@ This file provides context for AI assistants (like Claude) working on this proje
 ```
 
 ### Environment Files
-- `.env` - Production configuration
-- `.env.dev` - Development configuration
+- `.env` - Production configuration (credentials only)
+- `.env.dev` - Development configuration (credentials only)
 - `.env.prod` - Production template
+
+Env vars are reserved for sensitive/credential values only. Non-sensitive, per-deployment settings live in `config.json` instead (see below) so they're plain-editable content, not treated as secrets.
 
 **Required Variables:**
 - `DISCORD_TOKEN` - Discord bot token
 - `GEMINI_API_KEY` - Google Gemini API key (paid/billed key)
-- `CLIENT_ID` - Discord application ID
+- `CLIENT_ID` - Discord application ID (not secret, but kept in env alongside the token since it's a per-deployment identity value with no sensible shared default)
 
 **Optional Variables:**
 - `GEMINI_API_KEY_FREE` - A separate, billing-free Gemini API key. Tried first for every AI request; the bot only falls back to the paid `GEMINI_API_KEY` if the free key hits its rate/quota limit. Keeps normal usage free.
-- `SCHOOL_CHANNEL_NAME` - Name of the channel messages get auto-copied to (default: `school`)
-- `BOT_TEST_CHANNEL_NAME` - Name of the channel excluded from auto-copy, for testing (default: `bot_test`)
-- `L2_SUBJECT` - L2 language subject name (default: `Tamil`)
-- `L3_SUBJECT` - L3 language subject name (default: `Hindi`)
+
+### config.json
+Non-sensitive, per-deployment settings that other families/servers would want to customize:
+- `schoolChannelName` - Name of the channel messages get auto-copied to (default: `"school"`)
+- `botTestChannelName` - Name of the channel excluded from auto-copy, for testing (default: `"bot_test"`)
+- `subjects` - Array of `{ designation, name, description }` objects (e.g. `{ "designation": "L2", "name": "Spanish", "description": "second language subject in school" }`). Fully parent-defined — `designation` isn't limited to "L2"/"L3", it's whatever label a school actually uses in assignments. Nothing about subject labeling is hardcoded in the codebase. Empty array = no subject-designation awareness at all (the section is omitted from the AI prompt entirely).
+- `schoolKeywords` - Array of words that mark a message as school-related for auto-copying. Each subject's `designation` and `name` are appended to this list at runtime, not stored in it.
 
 ## Code Architecture
 
@@ -56,9 +61,7 @@ let schoolChannelId = null;             // Cached school channel ID
 
 ### System Context (Lines 43-54)
 
-Educational context injected into all AI conversations, configurable via `L2_SUBJECT`/`L3_SUBJECT`:
-- **L2** (default: Tamil) - language subject
-- **L3** (default: Hindi) - language subject
+Educational context injected into all AI conversations, set via the `subjects` array in `config.json` (each a `{ designation, name, description }` object). If the array is empty, this section is omitted from the prompt entirely. Not limited to L2/L3 — any number of arbitrary designations are supported.
 
 This context is prepended to every Gemini API call to maintain educational assistant behavior.
 
@@ -173,8 +176,7 @@ useWebSearch = directlyNeedsWebSearch || previousUsedWebSearch
 2. Skips if already in school channel
 3. Skips the `bot_test` channel entirely (for testing without polluting #school)
 4. Silent operation (no user notification)
-5. Lazy-loads school channel ID
-6. Handles missing channel gracefully
+5. Lazy-loads and caches school channel ID; if not found, caches that too and stops retrying until the bot restarts (avoids repeated `channels.fetch()` calls)
 
 ### Conversation Context Initialization
 Every path initializes history with:
@@ -214,7 +216,7 @@ Supports: images, documents, audio, video.
 - On quota/rate-limit errors, the bot automatically falls back from the free-tier key to the paid key (see `GEMINI_API_KEY_FREE`) — no user-visible retry/error
 
 ### 5. Channel Name Matching
-School/test channel detection is case-insensitive and configurable via `SCHOOL_CHANNEL_NAME`/`BOT_TEST_CHANNEL_NAME` (defaults: `school`/`bot_test`):
+School/test channel detection is case-insensitive and configurable via `schoolChannelName`/`botTestChannelName` in `config.json` (defaults: `school`/`bot_test`). These are loaded into `SCHOOL_CHANNEL_NAME`/`BOT_TEST_CHANNEL_NAME` constants in index.js:
 ```javascript
 ch.name.toLowerCase() === SCHOOL_CHANNEL_NAME
 ```
