@@ -444,7 +444,12 @@ MIT License
 
 ## 📞 Support
 
-For issues or questions, please open an issue on GitHub.
+Stuck on setup, or found something not working? Open an issue on the **original** repo (not your fork — forks don't have Issues enabled):
+
+1. Go to https://github.com/coolsumesh/sumorobo-discord-bot/issues
+2. Click **"New issue"**
+3. Describe what step you're on and what's happening (screenshots help)
+4. Click **"Submit new issue"**
 
 ---
 
