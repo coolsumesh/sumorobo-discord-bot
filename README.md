@@ -199,10 +199,19 @@ By now you should have your `CLIENT_ID`, `DISCORD_TOKEN`, and `GEMINI_API_KEY` f
    - **Health Check Path:** `/`
    - Render will auto-restart if service becomes unhealthy
 
-4. **Keep bot awake** (prevent free tier spin-down)
-   - Go to [UptimeRobot](https://uptimerobot.com)
-   - Add monitor with your Render URL
-   - Check interval: 5 minutes
+4. **Keep bot awake** (prevent free tier spin-down) — don't skip this one
+
+   Your bot stays connected to Discord only as long as its Render process keeps running. Render's free tier kills that process after ~15 minutes with no incoming **HTTP** traffic. The problem: normal bot usage (people chatting in Discord) never generates HTTP traffic to Render — Discord messages arrive over an existing connection, not as web requests — so once the process sleeps, nothing about people using the bot can wake it back up. It just goes offline and **stays offline indefinitely**, not just slow, until something happens to hit the Render URL directly. It'll also silently wipe all channels' conversation memory (stored in-process only) every time this happens.
+
+   This step pings the URL every 5 minutes so Render never sees that 15-minute gap and the process never sleeps in the first place. There's no free-tier setting that fixes this a different way — only the paid Render Starter plan removes the need for it (see Cost section).
+
+   - Go to [UptimeRobot](https://uptimerobot.com) and create a free account
+   - Click **"+ Add New Monitor"**
+   - **Monitor Type:** HTTP(s)
+   - **Friendly Name:** anything, e.g. "SumoRobo Bot"
+   - **URL:** your Render app's URL from step 2 above (e.g. `https://your-app-name.onrender.com`)
+   - **Monitoring Interval:** 5 minutes
+   - Click **"Create Monitor"**
 
 ## 📊 Monitoring
 
